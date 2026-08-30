@@ -23,6 +23,9 @@ import {
   getRateLimitStatus,
   getCallCountToday,
   getSpendUsdToday,
+  saveTask,
+  tryGetGitHubRemote,
+  createPullRequest,
 } from '@committee/core';
 
 const program = new Command();
@@ -184,9 +187,29 @@ task
         console.log(`Warning: commit reported exit code ${commitResult.exitCode}: ${commitResult.stderr}`);
       }
       approve(taskId);
-      transitionTask(taskId, 'done');
+      const done = transitionTask(taskId, 'done');
+
+      const githubRemote = tryGetGitHubRemote(t.repoPath);
+      if (githubRemote && process.env.GITHUB_TOKEN) {
+        try {
+          const pr = await createPullRequest({
+            repoPath: t.repoPath,
+            branch: workspace.branch,
+            baseBranch: t.baseBranch,
+            title: `committee: ${t.description}`,
+            body: `${t.description}\n\nAcceptance criteria: ${t.acceptanceCriteria}`,
+          });
+          saveTask({ ...done, prUrl: pr.url });
+          console.log(`Opened PR: ${pr.url}`);
+        } catch (err) {
+          console.log(`Warning: could not open a PR automatically (${(err as Error).message}).`);
+          console.log(`The commit is still safe on branch ${workspace.branch} — push/PR it yourself.`);
+        }
+      } else {
+        console.log(`Committed on branch ${workspace.branch} (no GitHub remote/token configured — local only).`);
+      }
       workspace.removeWorktree();
-      console.log(`Approved and committed on branch ${workspace.branch}. Workspace cleaned up.`);
+      console.log(`Workspace cleaned up.`);
     } else {
       process.stdout.write('Rejection feedback for the agent: ');
       const note = (await lines.next()).value ?? '';

@@ -18,7 +18,12 @@ const DEFAULT_CODER: AgentConfig = {
   // skips any provider with no modelByProvider entry, so this is safe.
   providerPreference: ['groq', 'gemini', 'deepseek', 'glm', 'ollama', 'anthropic'],
   modelByProvider: {
-    groq: 'openai/gpt-oss-120b',
+    // openai/gpt-oss-120b was tried first — reasoned well and picked correct
+    // tool calls, but its "Harmony" response format occasionally leaks an
+    // internal "commentary" channel as a bogus tool call, which crashes
+    // generateText with a validation error. qwen3.8-27b doesn't have this
+    // quirk in testing, so it's the safer default for now.
+    groq: 'qwen/qwen3.8-27b',
     gemini: 'gemini-3.6-flash',
     ollama: 'llama3.1:8b',
     anthropic: 'claude-sonnet-5',

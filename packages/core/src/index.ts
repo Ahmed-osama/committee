@@ -34,6 +34,8 @@ export { GitWorkspace } from './tools/dev-shop/git-workspace.js';
 export type { CommandResult } from './tools/dev-shop/git-workspace.js';
 export { createDevShopTools } from './tools/dev-shop/dev-shop-tools.js';
 export { filterForAgent, toToolSet } from './tools/tool-registry.js';
+export { createPullRequest, tryGetGitHubRemote, parseGitHubRemote } from './tools/dev-shop/create-pr.js';
+export type { CreatePrInput, CreatePrResult } from './tools/dev-shop/create-pr.js';
 
 export { db } from './persistence/db.js';
 export * as schema from './persistence/schema.js';

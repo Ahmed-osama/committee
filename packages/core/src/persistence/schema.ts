@@ -19,6 +19,7 @@ export const tasks = sqliteTable('tasks', {
   status: text('status').notNull(),
   assignedAgentId: text('assigned_agent_id'),
   workspacePath: text('workspace_path'),
+  prUrl: text('pr_url'),
   retryCount: integer('retry_count').notNull().default(0),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),

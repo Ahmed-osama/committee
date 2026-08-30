@@ -16,6 +16,7 @@ export interface Task {
   status: TaskStatus;
   assignedAgentId?: string;
   workspacePath?: string;
+  prUrl?: string;
   retryCount: number;
   createdAt: string;
   updatedAt: string;
