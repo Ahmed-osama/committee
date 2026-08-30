@@ -4,14 +4,22 @@ import { createInterface } from 'node:readline';
 import { resolve as resolvePath } from 'node:path';
 import { Command } from 'commander';
 import { generateText } from 'ai';
-import { runAgentLoop } from '../core/agent/agent-loop.js';
-import { approve, reject, submitForReview } from '../core/approval/approval-gate.js';
-import { getOrCreateDefaultCoder } from '../core/persistence/repositories/agent-repo.js';
-import { getLatestRejectionFeedback } from '../core/persistence/repositories/approval-repo.js';
-import { recordDecision, getDecisionsForTask } from '../core/persistence/repositories/decision-repo.js';
-import { createTask, getTask, retryTask, transitionTask } from '../core/persistence/repositories/task-repo.js';
-import { ollamaAdapter } from '../core/provider/ollama-adapter.js';
-import { GitWorkspace } from '../core/tools/dev-shop/git-workspace.js';
+import {
+  runAgentLoop,
+  approve,
+  reject,
+  submitForReview,
+  getOrCreateDefaultCoder,
+  getLatestRejectionFeedback,
+  recordDecision,
+  getDecisionsForTask,
+  createTask,
+  getTask,
+  retryTask,
+  transitionTask,
+  ollamaAdapter,
+  GitWorkspace,
+} from '@committee/core';
 
 const program = new Command();
 

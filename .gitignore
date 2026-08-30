@@ -6,3 +6,4 @@ build/
 *.log
 committee.db
 committee.db-*
+.turbo/
