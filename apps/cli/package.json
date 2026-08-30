@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "cli": "tsx src/index.ts",
+    "cli": "node --import tsx --env-file-if-exists=../../.env src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

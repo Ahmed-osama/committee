@@ -18,6 +18,17 @@ export { approve, reject, submitForReview } from './approval/approval-gate.js';
 
 export type { ProviderAdapter } from './provider/provider-adapter.js';
 export { ollamaAdapter } from './provider/ollama-adapter.js';
+export { groqAdapter } from './provider/groq-adapter.js';
+export { geminiAdapter } from './provider/gemini-adapter.js';
+export { anthropicAdapter } from './provider/anthropic-adapter.js';
+export { deepseekAdapter } from './provider/deepseek-adapter.js';
+export { glmAdapter } from './provider/glm-adapter.js';
+export { PROVIDER_REGISTRY, isProviderConfigured } from './provider/provider-registry.js';
+export { selectProvider } from './provider/provider-router.js';
+export type { ProviderSelection } from './provider/provider-router.js';
+export { getRateLimitStatus, getCallCountToday, getSpendUsdToday } from './provider/rate-limit-tracker.js';
+export type { RateLimitStatus } from './provider/rate-limit-tracker.js';
+export { computeCostUsd } from './provider/pricing.js';
 
 export { GitWorkspace } from './tools/dev-shop/git-workspace.js';
 export type { CommandResult } from './tools/dev-shop/git-workspace.js';

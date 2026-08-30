@@ -8,6 +8,13 @@
       "when": 1788092993117,
       "tag": "0000_heavy_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788096828462,
+      "tag": "0001_bored_songbird",
+      "breakpoints": true
     }
   ]
 }

@@ -113,8 +113,22 @@ export class GitWorkspace {
     return this.run('git', ['commit', '-m', message]);
   }
 
-  discard(): void {
+  /**
+   * Removes the linked working directory only — never the branch. This is
+   * the one to call after an *approved* task: the branch (and whatever got
+   * committed to it) is the actual deliverable and must survive workspace
+   * cleanup. A prior version of this method deleted the branch too, which
+   * destroyed a just-approved commit the moment it was made — caught by
+   * actually inspecting the target repo after a real approve, not by any
+   * test, since the bug only shows up by checking git history afterward.
+   */
+  removeWorktree(): void {
     execFileSync('git', ['-C', this.task.repoPath, 'worktree', 'remove', this.path, '--force'], { stdio: 'pipe' });
+  }
+
+  /** Only for genuinely abandoning a task's work — removes the worktree and deletes its branch. */
+  discardEntirely(): void {
+    this.removeWorktree();
     try {
       execFileSync('git', ['-C', this.task.repoPath, 'branch', '-D', this.branch], { stdio: 'pipe' });
     } catch {

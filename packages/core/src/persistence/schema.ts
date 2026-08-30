@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
 export const agents = sqliteTable('agents', {
   id: text('id').primaryKey(),
@@ -6,6 +6,7 @@ export const agents = sqliteTable('agents', {
   role: text('role').notNull(),
   systemPrompt: text('system_prompt').notNull(),
   providerPreference: text('provider_preference', { mode: 'json' }).$type<string[]>().notNull(),
+  modelByProvider: text('model_by_provider', { mode: 'json' }).$type<Record<string, string>>().notNull(),
   toolAllowList: text('tool_allow_list', { mode: 'json' }).$type<string[]>().notNull(),
 });
 
@@ -40,4 +41,18 @@ export const approvals = sqliteTable('approvals', {
   reviewNote: text('review_note'),
   createdAt: text('created_at').notNull(),
   resolvedAt: text('resolved_at'),
+});
+
+// One event log serving two purposes: rate-limit windows (count rows in the
+// last minute/day) and spend tracking (sum costUsd) — both are just
+// different queries over "what LLM calls actually happened."
+export const providerCalls = sqliteTable('provider_calls', {
+  id: text('id').primaryKey(),
+  agentId: text('agent_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  modelId: text('model_id').notNull(),
+  inputTokens: integer('input_tokens').notNull(),
+  outputTokens: integer('output_tokens').notNull(),
+  costUsd: real('cost_usd').notNull(),
+  createdAt: text('created_at').notNull(),
 });

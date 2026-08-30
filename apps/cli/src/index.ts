@@ -17,8 +17,12 @@ import {
   getTask,
   retryTask,
   transitionTask,
-  ollamaAdapter,
   GitWorkspace,
+  PROVIDER_REGISTRY,
+  isProviderConfigured,
+  getRateLimitStatus,
+  getCallCountToday,
+  getSpendUsdToday,
 } from '@committee/core';
 
 const program = new Command();
@@ -27,13 +31,44 @@ program.name('committee').description('AI agent employees — a Game-of-Life sty
 
 program
   .command('ping')
-  .description('Phase 0 smoke test: send a prompt straight to the local Ollama model and print the response')
+  .description('Smoke test: send a prompt straight to one provider/model and print the response')
   .argument('[prompt]', 'prompt to send', 'Reply with exactly one short sentence confirming you can hear me.')
-  .option('-m, --model <model>', 'Ollama model id', 'llama3.1:8b')
-  .action(async (prompt: string, opts: { model: string }) => {
-    const { text, usage } = await generateText({ model: ollamaAdapter.model(opts.model), prompt });
+  .option('-p, --provider <id>', 'provider id (ollama, groq, gemini, anthropic)', 'ollama')
+  .option('-m, --model <model>', 'model id', 'llama3.1:8b')
+  .action(async (prompt: string, opts: { provider: string; model: string }) => {
+    const provider = PROVIDER_REGISTRY[opts.provider];
+    if (!provider) throw new Error(`Unknown provider '${opts.provider}'. Known: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`);
+    const { text, usage } = await generateText({ model: provider.model(opts.model), prompt });
     console.log(text);
     console.log(`\n[tokens: ${usage.inputTokens} in / ${usage.outputTokens} out]`);
+  });
+
+program
+  .command('providers')
+  .description("Show the default coder agent's provider preference, config status, and today's rate-limit/spend usage")
+  .action(() => {
+    const agent = getOrCreateDefaultCoder();
+    console.log(`Agent: ${agent.name} (${agent.id})`);
+    console.log(`Calls today: ${getCallCountToday(agent.id)}`);
+    console.log(`Spend today: $${getSpendUsdToday(agent.id).toFixed(4)}\n`);
+    for (const providerId of agent.providerPreference) {
+      const modelId = agent.modelByProvider[providerId];
+      const configured = isProviderConfigured(providerId);
+      if (!modelId) {
+        console.log(`  ${providerId}: no model configured for this agent — skipped by the router`);
+        continue;
+      }
+      if (!configured) {
+        console.log(`  ${providerId} (${modelId}): not configured — missing API key`);
+        continue;
+      }
+      const status = getRateLimitStatus(providerId, modelId);
+      console.log(
+        `  ${providerId} (${modelId}): ${status.availableNow ? 'available' : 'RATE-LIMITED'} — ` +
+          `${status.rpmUsed}${status.rpmLimit !== undefined ? `/${status.rpmLimit}` : ''} rpm, ` +
+          `${status.rpdUsed}${status.rpdLimit !== undefined ? `/${status.rpdLimit}` : ''} rpd`,
+      );
+    }
   });
 
 function assertGitRepo(repoPath: string): void {
@@ -44,7 +79,7 @@ function assertGitRepo(repoPath: string): void {
   }
 }
 
-async function runLoopAndReport(taskId: string, modelId: string, feedback?: string): Promise<void> {
+async function runLoopAndReport(taskId: string, feedback?: string): Promise<void> {
   const task = getTask(taskId);
   if (!task) throw new Error(`Task not found: ${taskId}`);
   const agent = getOrCreateDefaultCoder();
@@ -61,8 +96,6 @@ async function runLoopAndReport(taskId: string, modelId: string, feedback?: stri
     agent,
     task: getTask(taskId)!,
     workspace,
-    provider: ollamaAdapter,
-    modelId,
     feedback,
     onDecision: (d) => {
       recordDecision(d);
@@ -73,7 +106,7 @@ async function runLoopAndReport(taskId: string, modelId: string, feedback?: stri
     },
   });
 
-  console.log(`\nfinishReason=${result.finishReason} steps=${result.stepCount}`);
+  console.log(`\nprovider=${result.providerId} model=${result.modelId} finishReason=${result.finishReason} steps=${result.stepCount}`);
 
   if (result.finalSummary) {
     submitForReview(taskId);
@@ -94,8 +127,7 @@ task
   .argument('<description>', 'what the agent should do')
   .requiredOption('--acceptance <criteria>', 'acceptance criteria for the task')
   .option('--branch <branch>', 'base branch to branch off of', 'main')
-  .option('-m, --model <model>', 'Ollama model id', 'llama3.1:8b')
-  .action(async (repoPath: string, description: string, opts: { acceptance: string; branch: string; model: string }) => {
+  .action(async (repoPath: string, description: string, opts: { acceptance: string; branch: string }) => {
     const absRepoPath = resolvePath(process.cwd(), repoPath);
     assertGitRepo(absRepoPath);
     const created = createTask({
@@ -105,7 +137,7 @@ task
       baseBranch: opts.branch,
     });
     console.log(`Created task ${created.id}`);
-    await runLoopAndReport(created.id, opts.model);
+    await runLoopAndReport(created.id);
   });
 
 task
@@ -153,7 +185,7 @@ task
       }
       approve(taskId);
       transitionTask(taskId, 'done');
-      workspace.discard();
+      workspace.removeWorktree();
       console.log(`Approved and committed on branch ${workspace.branch}. Workspace cleaned up.`);
     } else {
       process.stdout.write('Rejection feedback for the agent: ');
@@ -168,11 +200,10 @@ task
   .command('retry')
   .description('Re-run the agent on a rejected task, feeding back the reviewer note')
   .argument('<taskId>')
-  .option('-m, --model <model>', 'Ollama model id', 'llama3.1:8b')
-  .action(async (taskId: string, opts: { model: string }) => {
+  .action(async (taskId: string) => {
     const feedback = getLatestRejectionFeedback(taskId);
     retryTask(taskId);
-    await runLoopAndReport(taskId, opts.model, feedback);
+    await runLoopAndReport(taskId, feedback);
   });
 
 program.parseAsync(process.argv).catch((err) => {

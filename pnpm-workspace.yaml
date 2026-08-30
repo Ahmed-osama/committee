@@ -12,3 +12,7 @@ minimumReleaseAgeExclude:
   - ai@7.0.85
   - tsx@4.23.13
   - zod@4.5.4
+  - '@ai-sdk/anthropic@4.0.46'
+  - '@ai-sdk/google@4.0.58'
+  - '@ai-sdk/groq@4.0.35'
+  - '@ai-sdk/deepseek@3.0.37'

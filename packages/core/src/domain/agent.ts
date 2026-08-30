@@ -5,8 +5,10 @@ export interface AgentConfig {
   name: string;
   role: AgentRole;
   systemPrompt: string;
-  /** Ordered provider ids to try, e.g. ['ollama', 'groq', 'anthropic'] — used by the router in Phase 2. */
+  /** Ordered provider ids to try, e.g. ['groq', 'gemini', 'ollama', 'anthropic'] — walked by the ProviderRouter. */
   providerPreference: string[];
+  /** Which model to use on each provider in providerPreference, e.g. { anthropic: 'claude-sonnet-5' }. */
+  modelByProvider: Record<string, string>;
   toolAllowList: string[];
 }
 

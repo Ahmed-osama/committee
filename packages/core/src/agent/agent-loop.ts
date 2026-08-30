@@ -2,7 +2,10 @@ import { generateText, hasToolCall, stepCountIs, type ToolSet } from 'ai';
 import type { AgentConfig } from '../domain/agent.js';
 import type { DecisionRecord } from '../domain/run.js';
 import type { Task } from '../domain/task.js';
-import type { ProviderAdapter } from '../provider/provider-adapter.js';
+import { computeCostUsd } from '../provider/pricing.js';
+import { PROVIDER_REGISTRY } from '../provider/provider-registry.js';
+import { selectProvider } from '../provider/provider-router.js';
+import { recordProviderCall } from '../provider/rate-limit-tracker.js';
 import { createDevShopTools } from '../tools/dev-shop/dev-shop-tools.js';
 import type { GitWorkspace } from '../tools/dev-shop/git-workspace.js';
 import { filterForAgent, toToolSet } from '../tools/tool-registry.js';
@@ -11,14 +14,14 @@ export interface AgentLoopResult {
   finishReason: string;
   stepCount: number;
   finalSummary: string | undefined;
+  providerId: string;
+  modelId: string;
 }
 
 export interface RunAgentLoopOptions {
   agent: AgentConfig;
   task: Task;
   workspace: GitWorkspace;
-  provider: ProviderAdapter;
-  modelId: string;
   maxSteps?: number;
   /** Rejection feedback from a previous review round, fed back into context on retry. */
   feedback?: string;
@@ -34,7 +37,15 @@ export interface RunAgentLoopOptions {
  * an agent concept worth hand-rolling.
  */
 export async function runAgentLoop(opts: RunAgentLoopOptions): Promise<AgentLoopResult> {
-  const { agent, task, workspace, provider, modelId, maxSteps = 12, feedback, onDecision } = opts;
+  const { agent, task, workspace, maxSteps = 12, feedback, onDecision } = opts;
+
+  // Selected once per run, not per step: one generateText() call is pinned
+  // to one model for its whole multi-step tool loop, so there's nowhere to
+  // re-route mid-run even if a stricter rate limit kicked in between steps.
+  // With maxSteps capped at 12 this is an acceptable simplification, not a
+  // real gap — a single task run is a small, bounded burst.
+  const { providerId, modelId } = selectProvider(agent);
+  const provider = PROVIDER_REGISTRY[providerId];
 
   const allowedTools = filterForAgent(createDevShopTools(workspace), agent.toolAllowList);
   const tools: ToolSet = toToolSet(allowedTools);
@@ -62,6 +73,15 @@ export async function runAgentLoop(opts: RunAgentLoopOptions): Promise<AgentLoop
     tools,
     stopWhen: [stepCountIs(maxSteps), hasToolCall('finish_task')],
     onStepFinish: (step) => {
+      recordProviderCall({
+        agentId: agent.id,
+        providerId,
+        modelId,
+        inputTokens: step.usage.inputTokens ?? 0,
+        outputTokens: step.usage.outputTokens ?? 0,
+        costUsd: computeCostUsd(providerId, modelId, step.usage.inputTokens ?? 0, step.usage.outputTokens ?? 0),
+      });
+
       for (const call of step.toolCalls) {
         onDecision?.({
           agentId: agent.id,
@@ -95,5 +115,20 @@ export async function runAgentLoop(opts: RunAgentLoopOptions): Promise<AgentLoop
     },
   });
 
-  return { finishReason: result.finishReason, stepCount: result.steps.length, finalSummary };
+  // Some models (verified: Groq's openai/gpt-oss-120b) do everything right —
+  // read the files, make the correct fix, run tests, see them pass — and
+  // then conclude with a plain-text summary instead of calling finish_task,
+  // despite being told to. Rather than fight every model's own conclusion
+  // style, treat a natural stop as equivalent to finish_task: if the last
+  // step made no tool calls, the model chose to stop on its own (a step
+  // that got cut off by the maxSteps ceiling mid-work would still contain a
+  // tool call), so its text is the summary. This is safe specifically
+  // because human review re-verifies independently either way — the
+  // approval gate doesn't trust either kind of "done" signal blindly.
+  const lastStep = result.steps.at(-1);
+  if (!finalSummary && lastStep && lastStep.toolCalls.length === 0 && lastStep.text) {
+    finalSummary = lastStep.text;
+  }
+
+  return { finishReason: result.finishReason, stepCount: result.steps.length, finalSummary, providerId, modelId };
 }
