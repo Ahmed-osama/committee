@@ -1,0 +1,42 @@
+{
+  "name": "committee",
+  "version": "1.0.0",
+  "description": "AI agent employees — a Game-of-Life style multi-agent dev shop",
+  "main": "index.js",
+  "scripts": {
+    "test": "COMMITTEE_DB_PATH=:memory: node --import tsx --test src/**/*.test.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "cli": "tsx src/cli/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ahmed-osama/committee.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ahmed-osama/committee/issues"
+  },
+  "homepage": "https://github.com/Ahmed-osama/committee#readme",
+  "type": "module",
+  "private": "true",
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.41",
+    "ai": "^7.0.85",
+    "better-sqlite3": "^13.0.3",
+    "commander": "^15.0.0",
+    "drizzle-orm": "^0.45.2",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.4.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}

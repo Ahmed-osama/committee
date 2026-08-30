@@ -1,0 +1,15 @@
+{
+  "model": "claude-sonnet-5",
+  "promptCacheTtl": "1h",
+  "skillListingMaxDescChars": 400,
+  "permissions": {
+    "deny": [
+      "Read(./**/node_modules/**)",
+      "Read(./**/dist/**)",
+      "Read(./**/build/**)",
+      "Read(./**/.next/**)",
+      "Read(./**/*.min.js)",
+      "Read(./**/*.min.css)"
+    ]
+  }
+}
