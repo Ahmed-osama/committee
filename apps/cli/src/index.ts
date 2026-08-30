@@ -36,7 +36,7 @@ program
   .command('plan')
   .description('Give a goal to the Planner/Architect/Skeptic and watch them work out a plan together')
   .argument('<goal>', 'what you want done, in plain language')
-  .option('--max-turns <n>', 'safety ceiling on conversation length', (v) => parseInt(v, 10), 12)
+  .option('--max-turns <n>', 'safety ceiling on conversation length', (v) => parseInt(v, 10), 15)
   .action(async (goal: string, opts: { maxTurns: number }) => {
     const planner = getOrCreateDefaultPlanner();
     const architect = getOrCreateDefaultArchitect();
@@ -76,8 +76,10 @@ program
   .description('Show a past conversation')
   .argument('<conversationId>')
   .action((conversationId: string) => {
+    const roster = [getOrCreateDefaultPlanner(), getOrCreateDefaultArchitect(), getOrCreateDefaultSkeptic()];
     for (const m of getConversationTranscript(conversationId)) {
-      console.log(`--- turn ${m.turn} | ${m.fromAgentId} (${m.intent}) ---\n${m.content}\n`);
+      const speaker = roster.find((a) => a.id === m.fromAgentId)?.name ?? m.fromAgentId;
+      console.log(`--- turn ${m.turn} | ${speaker} (${m.intent}) ---\n${m.content}\n`);
     }
   });
 

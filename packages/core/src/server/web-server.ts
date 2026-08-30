@@ -91,6 +91,17 @@ function handleEvents(req: IncomingMessage, res: ServerResponse, conversationId:
   });
 }
 
+function handleListAgents(res: ServerResponse): void {
+  const planner = getOrCreateDefaultPlanner();
+  const architect = getOrCreateDefaultArchitect();
+  const skeptic = getOrCreateDefaultSkeptic();
+  sendJson(
+    res,
+    200,
+    [planner, architect, skeptic].map((a) => ({ id: a.id, name: a.name, role: a.role })),
+  );
+}
+
 function handleListConversations(res: ServerResponse): void {
   const rows = db.select().from(conversations).orderBy(desc(conversations.createdAt)).all();
   sendJson(res, 200, rows);
@@ -118,6 +129,10 @@ export function startWebServer(port = 3000): Promise<WebServerHandle> {
     }
     if (req.method === 'POST' && url.pathname === '/api/plan') {
       void handleStartPlan(req, res);
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/agents') {
+      handleListAgents(res);
       return;
     }
     if (req.method === 'GET' && url.pathname === '/api/conversations') {

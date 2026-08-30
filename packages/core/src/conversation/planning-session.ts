@@ -35,7 +35,7 @@ export interface PlanningSessionResult {
   turnsUsed: number;
 }
 
-const DEFAULT_MAX_TURNS = 12;
+const DEFAULT_MAX_TURNS = 15;
 
 function formatTranscript(transcript: Message[], agents: AgentConfig[]): string {
   const nameFor = (id: string) => agents.find((a) => a.id === id)?.name ?? id;
@@ -54,6 +54,18 @@ export function canOfferFinalize(turn: number, agentCount: number): boolean {
   return turn >= agentCount;
 }
 
+/**
+ * True agreement, not silence: the skeptic must have explicitly called the
+ * agree tool — its most recent turn can't be a live, unaddressed
+ * objection — or there's no real basis for calling this a settled plan
+ * rather than one side just deciding to stop listening.
+ */
+export function hasSkepticAgreed(transcript: Message[], skepticId: string | undefined): boolean {
+  if (!skepticId) return true;
+  const lastSkepticMessage = [...transcript].reverse().find((m) => m.fromAgentId === skepticId);
+  return lastSkepticMessage?.intent === 'agree';
+}
+
 function intentForRole(role: AgentRole): Message['intent'] {
   return role === 'skeptic' ? 'challenge' : 'propose';
 }
@@ -61,20 +73,23 @@ function intentForRole(role: AgentRole): Message['intent'] {
 /**
  * A round-robin multi-agent dialogue, not a single agent's tool loop — each
  * turn is one agent, given the full transcript so far, producing one new
- * turn. Only the designated finalizer can end it, by calling finalize_plan
- * instead of speaking; everyone else just talks. Publishing the resulting
- * plan anywhere (Linear, a file, whatever) is deliberately a separate,
- * deterministic step outside this function — once the shape of the plan is
- * known, mapping it to Linear issues doesn't need another LLM call, it
- * needs code that reliably does the same thing every time.
+ * turn. Only the designated finalizer can end it, and only once the
+ * skeptic has explicitly agreed — by calling finalize_plan/agree instead
+ * of speaking. Publishing the resulting plan anywhere (Linear, once
+ * connected) is deliberately a separate, deterministic step outside this
+ * function — once the shape of the plan is known, mapping it to Linear
+ * issues doesn't need another LLM call, it needs code that reliably does
+ * the same thing every time.
  */
 export async function runPlanningSession(opts: PlanningSessionOptions): Promise<PlanningSessionResult> {
   const { conversationId, goal, agents, finalizerAgentId, maxTurns = DEFAULT_MAX_TURNS, onMessage } = opts;
   const transcript: Message[] = [];
+  const skeptic = agents.find((a) => a.role === 'skeptic');
   let plan: FinalizedPlan | undefined;
+  let agreementNote: string | undefined;
 
   const finalizeTool = tool({
-    description: 'Call this once the plan is genuinely settled and stress-tested — ends the conversation.',
+    description: 'Call this once the plan is genuinely settled and the skeptic has agreed — ends the conversation.',
     inputSchema: z.object({
       summary: z.string().describe('One-paragraph summary of the agreed plan'),
       tasks: z.array(z.object({ title: z.string(), description: z.string() })).describe('The concrete task breakdown, in order'),
@@ -85,10 +100,20 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
     },
   });
 
+  const agreeTool = tool({
+    description: 'Call this once you have no further real objections — signals genuine agreement instead of speaking.',
+    inputSchema: z.object({ note: z.string().describe('Briefly why you are satisfied, not just "looks good"') }),
+    execute: (input) => {
+      agreementNote = input.note;
+      return `Agreed: ${input.note}`;
+    },
+  });
+
   for (let turn = 0; turn < maxTurns; turn++) {
     const agent = agents[turn % agents.length];
-    const isFinalizer = agent.id === finalizerAgentId && canOfferFinalize(turn, agents.length);
-    const tools: ToolSet = isFinalizer ? { finalize_plan: finalizeTool } : {};
+    const isSkeptic = agent.id === skeptic?.id;
+    const isFinalizer = agent.id === finalizerAgentId && canOfferFinalize(turn, agents.length) && hasSkepticAgreed(transcript, skeptic?.id);
+    const tools: ToolSet = isFinalizer ? { finalize_plan: finalizeTool } : isSkeptic ? { agree: agreeTool } : {};
 
     const { providerId, modelId } = selectProvider(agent);
     const provider = PROVIDER_REGISTRY[providerId];
@@ -100,7 +125,8 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
         ? `Conversation so far:\n\n${formatTranscript(transcript, agents)}`
         : '(You are speaking first — open with a concrete initial proposal, not a restatement of the goal.)',
       `Now speak as ${agent.name}. A few sentences, no filler.` +
-        (isFinalizer ? ' If the plan is genuinely settled, call finalize_plan instead of speaking.' : ''),
+        (isFinalizer ? ' If the plan is genuinely settled, call finalize_plan instead of speaking.' : '') +
+        (isSkeptic ? ' If you have no further real objections, call agree instead of speaking.' : ''),
     ];
 
     const result = await generateText({
@@ -124,10 +150,12 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
       return { finalized: true, plan, turnsUsed: turn + 1 };
     }
 
-    const content = result.text.trim() || '(no response this turn)';
-    const message = sendMessage({ conversationId, fromAgentId: agent.id, intent: intentForRole(agent.role), content, turn });
+    const content = agreementNote ?? (result.text.trim() || '(no response this turn)');
+    const intent: Message['intent'] = agreementNote !== undefined ? 'agree' : intentForRole(agent.role);
+    const message = sendMessage({ conversationId, fromAgentId: agent.id, intent, content, turn });
     transcript.push(message);
     onMessage?.(message);
+    agreementNote = undefined;
   }
 
   return { finalized: false, turnsUsed: maxTurns };
