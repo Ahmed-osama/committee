@@ -15,6 +15,8 @@ export { runAgentLoop } from './agent/agent-loop.js';
 export type { AgentLoopResult, RunAgentLoopOptions } from './agent/agent-loop.js';
 
 export { approve, reject, submitForReview } from './approval/approval-gate.js';
+export { approveTask, rejectTask } from './approval/approve-task.js';
+export type { ApproveTaskResult } from './approval/approve-task.js';
 
 export type { ProviderAdapter } from './provider/provider-adapter.js';
 export { ollamaAdapter } from './provider/ollama-adapter.js';
@@ -45,6 +47,9 @@ export type { AgentTurnOutcome } from './orchestrator/agent-turn.js';
 export { advanceTicks } from './orchestrator/tick-scheduler.js';
 export type { AdvanceTicksOptions } from './orchestrator/tick-scheduler.js';
 
+export { startDashboardServer } from './server/dashboard-server.js';
+export type { StartDashboardServerOptions, DashboardServerHandle } from './server/dashboard-server.js';
+
 export { db } from './persistence/db.js';
 export * as schema from './persistence/schema.js';
 export { getOrCreateDefaultCoder, getOrCreateDefaultReviewer } from './persistence/repositories/agent-repo.js';
@@ -67,4 +72,5 @@ export {
   findNextCoderTask,
   findNextReviewTask,
   alertIfRetriesExhausted,
+  getAllTasks,
 } from './persistence/repositories/task-repo.js';

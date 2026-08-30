@@ -9,8 +9,8 @@ import { Command } from 'commander';
 import { generateText } from 'ai';
 import {
   runAgentLoop,
-  approve,
-  reject,
+  approveTask,
+  rejectTask,
   getOrCreateDefaultCoder,
   getOrCreateDefaultReviewer,
   getLatestFeedback,
@@ -20,16 +20,12 @@ import {
   getTask,
   retryTask,
   transitionTask,
-  alertIfRetriesExhausted,
   GitWorkspace,
   PROVIDER_REGISTRY,
   isProviderConfigured,
   getRateLimitStatus,
   getCallCountToday,
   getSpendUsdToday,
-  saveTask,
-  tryGetGitHubRemote,
-  createPullRequest,
   advanceTicks,
   getAllMessages,
   getCurrentTick,
@@ -37,7 +33,10 @@ import {
   resumeScheduler,
   isPaused,
   getUnacknowledgedAlerts,
+  EventBus,
+  startDashboardServer,
 } from '@committee/core';
+import type { DashboardServerHandle } from '@committee/core';
 
 const program = new Command();
 
@@ -194,39 +193,18 @@ task
     process.stdout.write('\nApprove or reject? [a/r]: ');
     const answer = ((await lines.next()).value ?? '').trim().toLowerCase();
     if (answer === 'a') {
-      const commitResult = workspace.commit(`committee: ${t.description}`);
-      if (commitResult.exitCode !== 0 && !commitResult.stdout.includes('nothing to commit')) {
-        console.log(`Warning: commit reported exit code ${commitResult.exitCode}: ${commitResult.stderr}`);
-      }
-      approve(taskId);
-      const done = transitionTask(taskId, 'done');
-
-      const githubRemote = tryGetGitHubRemote(t.repoPath);
-      if (githubRemote && process.env.GITHUB_TOKEN) {
-        try {
-          const pr = await createPullRequest({
-            repoPath: t.repoPath,
-            branch: workspace.branch,
-            baseBranch: t.baseBranch,
-            title: `committee: ${t.description}`,
-            body: `${t.description}\n\nAcceptance criteria: ${t.acceptanceCriteria}`,
-          });
-          saveTask({ ...done, prUrl: pr.url });
-          console.log(`Opened PR: ${pr.url}`);
-        } catch (err) {
-          console.log(`Warning: could not open a PR automatically (${(err as Error).message}).`);
-          console.log(`The commit is still safe on branch ${workspace.branch} — push/PR it yourself.`);
-        }
+      const result = await approveTask(taskId);
+      if (result.commitWarning) console.log(`Warning: ${result.commitWarning}`);
+      if (result.prUrl) {
+        console.log(`Opened PR: ${result.prUrl}`);
       } else {
-        console.log(`Committed on branch ${workspace.branch} (no GitHub remote/token configured — local only).`);
+        console.log(`Committed on branch ${result.branch} (no GitHub remote/token configured, or PR creation failed — local only).`);
       }
-      workspace.removeWorktree();
       console.log(`Workspace cleaned up.`);
     } else {
       process.stdout.write('Rejection feedback for the agent: ');
       const note = (await lines.next()).value ?? '';
-      reject(taskId, note);
-      alertIfRetriesExhausted(t);
+      rejectTask(taskId, note);
       console.log(`Rejected. Run: committee task retry ${taskId}`);
     }
     rl.close();
@@ -303,7 +281,8 @@ daemon
   .command('run')
   .description('Run in the foreground: advance one tick every --interval seconds until stopped')
   .option('--interval <seconds>', 'seconds between ticks', (v) => parseInt(v, 10), 30)
-  .action(async (opts: { interval: number }) => {
+  .option('--web-port <port>', 'also serve the dashboard API/WebSocket on this port', (v) => parseInt(v, 10))
+  .action(async (opts: { interval: number; webPort?: number }) => {
     const existingPid = readDaemonPid();
     if (existingPid) {
       console.error(`Daemon already running (pid ${existingPid}). Run 'committee daemon stop' first.`);
@@ -332,6 +311,17 @@ daemon
     const coder = getOrCreateDefaultCoder();
     const reviewer = getOrCreateDefaultReviewer();
 
+    // One EventBus instance for the whole run, shared with the dashboard
+    // server below — that sharing is *why* the dashboard has to live in
+    // this same process: events are in-process only, so a separate
+    // process would see nothing live off a different EventBus instance.
+    const bus = new EventBus();
+    let dashboard: DashboardServerHandle | undefined;
+    if (opts.webPort) {
+      dashboard = startDashboardServer({ bus, agents: [coder, reviewer], port: opts.webPort });
+      console.log(`Dashboard API/WebSocket listening on http://localhost:${opts.webPort}`);
+    }
+
     try {
       while (!stopRequested) {
         if (isPaused()) {
@@ -339,6 +329,7 @@ daemon
         } else {
           await advanceTicks(1, {
             agents: [coder, reviewer],
+            bus,
             onTick: (tick, outcomes) => {
               for (const outcome of outcomes) {
                 if (outcome.action === 'idle') continue;
@@ -355,6 +346,7 @@ daemon
         await sleep(opts.interval * 1000);
       }
     } finally {
+      if (dashboard) await dashboard.close();
       if (existsSync(PID_FILE)) unlinkSync(PID_FILE);
     }
     console.log('Daemon stopped cleanly.');

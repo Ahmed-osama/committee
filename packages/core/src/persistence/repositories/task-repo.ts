@@ -32,6 +32,10 @@ export function getTask(id: string): Task | undefined {
   return row as Task | undefined;
 }
 
+export function getAllTasks(): Task[] {
+  return db.select().from(tasks).orderBy(tasks.createdAt).all() as Task[];
+}
+
 export function saveTask(task: Task): void {
   db.update(tasks).set(task).where(eq(tasks.id, task.id)).run();
 }

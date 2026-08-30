@@ -23,11 +23,13 @@
     "ai": "^7.0.85",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",
+    "ws": "^8.21.3",
     "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.4.0",
+    "@types/ws": "^8.18.1",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
