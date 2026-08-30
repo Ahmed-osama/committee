@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { desc, eq, gt, isNull, or } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import type { Message } from '../../domain/message.js';
 import { db } from '../db.js';
 import { messages } from '../schema.js';
@@ -10,17 +10,7 @@ export function sendMessage(input: Omit<Message, 'id' | 'createdAt'>): Message {
   return message;
 }
 
-/** Messages addressed to this agent directly, plus broadcasts (toAgentId null), newest first. */
-export function getMessagesForAgent(agentId: string, sinceTick = -1): Message[] {
-  return db
-    .select()
-    .from(messages)
-    .where(or(eq(messages.toAgentId, agentId), isNull(messages.toAgentId)))
-    .orderBy(desc(messages.tick))
-    .all()
-    .filter((m) => m.tick > sinceTick) as Message[];
-}
-
-export function getAllMessages(sinceTick = -1): Message[] {
-  return db.select().from(messages).where(gt(messages.tick, sinceTick)).orderBy(messages.tick).all() as Message[];
+/** The full transcript of a conversation, in turn order. */
+export function getConversationTranscript(conversationId: string): Message[] {
+  return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(asc(messages.turn)).all() as Message[];
 }

@@ -1,74 +1,86 @@
+import { eq } from 'drizzle-orm';
 import type { AgentConfig } from '../../domain/agent.js';
 import { db } from '../db.js';
 import { agents } from '../schema.js';
 
-const DEFAULT_CODER: AgentConfig = {
-  id: 'default-coder',
-  name: 'Coder',
-  role: 'coder',
-  systemPrompt:
-    'You are a careful software engineer. You make the smallest change that satisfies the task, ' +
-    'run tests before declaring done, and never claim something works without having run it.',
-  // Every model id here was verified live against the provider's own API
-  // immediately before being added — cached knowledge of "current" model
-  // names turned out to be stale for both Gemini and Groq within the same
-  // session, so nothing gets hardcoded without checking first.
-  // deepseek/glm shown in the preference order to signal intent, but left
-  // out of modelByProvider until tested against a live key — the router
-  // skips any provider with no modelByProvider entry, so this is safe.
-  providerPreference: ['groq', 'gemini', 'deepseek', 'glm', 'ollama', 'anthropic'],
-  modelByProvider: {
-    // openai/gpt-oss-120b was tried first — reasoned well and picked correct
-    // tool calls, but its "Harmony" response format occasionally leaks an
-    // internal "commentary" channel as a bogus tool call, which crashes
-    // generateText with a validation error. qwen3.8-27b doesn't have this
-    // quirk in testing, so it's the safer default for now.
-    groq: 'qwen/qwen3.8-27b',
-    gemini: 'gemini-3.6-flash',
-    ollama: 'llama3.1:8b',
-    anthropic: 'claude-sonnet-5',
-  },
-  toolAllowList: ['list_files', 'read_file', 'write_file', 'run_tests', 'run_lint', 'finish_task'],
+// Every model id here was verified live against the provider's own API
+// before being added — cached "current" model names turned out stale for
+// both Gemini and Groq within one session, so nothing is hardcoded blind.
+const SHARED_PROVIDER_PREFERENCE = ['groq', 'gemini', 'ollama', 'anthropic'];
+const SHARED_MODEL_BY_PROVIDER = {
+  groq: 'qwen/qwen3.8-27b',
+  gemini: 'gemini-3.6-flash',
+  ollama: 'llama3.1:8b',
+  anthropic: 'claude-sonnet-5',
 };
 
-const DEFAULT_REVIEWER: AgentConfig = {
-  id: 'default-reviewer',
-  name: 'Reviewer',
-  role: 'reviewer',
+const DEFAULT_PLANNER: AgentConfig = {
+  id: 'default-planner',
+  name: 'Planner',
+  role: 'planner',
   systemPrompt:
-    'You are a skeptical code reviewer. You independently verify the diff and test results yourself — you never ' +
-    "trust the coder's summary at face value. You only approve work you would be comfortable shipping yourself. " +
-    'A diff that changes an unrelated file, removes test coverage, or claims success without actually running ' +
-    'tests is always a reason to request changes, never to approve.',
-  providerPreference: ['groq', 'gemini', 'deepseek', 'glm', 'ollama', 'anthropic'],
-  modelByProvider: {
-    groq: 'qwen/qwen3.8-27b',
-    gemini: 'gemini-3.6-flash',
-    ollama: 'llama3.1:8b',
-    anthropic: 'claude-sonnet-5',
-  },
-  toolAllowList: ['list_files', 'read_file', 'run_tests', 'run_lint', 'approve_for_human', 'request_changes'],
+    'You are the planner in a small planning conversation. Given a goal, you propose a concrete breakdown into ' +
+    'tasks — the "how" and the sequencing. You listen to the architect and the skeptic and revise your proposal ' +
+    "in response to real objections, rather than repeating yourself. You don't pad your turns — say only what " +
+    'moves the plan forward.',
+  providerPreference: SHARED_PROVIDER_PREFERENCE,
+  modelByProvider: SHARED_MODEL_BY_PROVIDER,
+  toolAllowList: [],
+};
+
+const DEFAULT_ARCHITECT: AgentConfig = {
+  id: 'default-architect',
+  name: 'Architect',
+  role: 'architect',
+  systemPrompt:
+    'You are the architect in a small planning conversation. You focus on structure: does the breakdown make ' +
+    'sense as discrete, independently completable tasks? Are there missing dependencies or ordering problems? ' +
+    'You propose concrete restructuring, not vague concerns. Once the plan is genuinely sound, you say so plainly ' +
+    'and finalize it.',
+  providerPreference: SHARED_PROVIDER_PREFERENCE,
+  modelByProvider: SHARED_MODEL_BY_PROVIDER,
+  // Only the architect finalizes — the tool list for Linear's MCP tools is
+  // merged in at conversation-start time, once they're fetched live.
+  toolAllowList: ['finalize_plan'],
+};
+
+const DEFAULT_SKEPTIC: AgentConfig = {
+  id: 'default-skeptic',
+  name: 'Skeptic',
+  role: 'skeptic',
+  systemPrompt:
+    'You are the skeptic in a small planning conversation. Your job is to find real problems with the current ' +
+    'proposal — scope creep, unstated assumptions, tasks that are actually two tasks, anything that would bite ' +
+    'someone during execution. You are not contrarian for its own sake: if a revised proposal actually addresses ' +
+    'your prior objection, say so and move on instead of repeating it.',
+  providerPreference: SHARED_PROVIDER_PREFERENCE,
+  modelByProvider: SHARED_MODEL_BY_PROVIDER,
+  toolAllowList: [],
 };
 
 /**
  * Upserts rather than insert-once: these are code-defined defaults, not
  * user-customized agents, so they should always reflect whatever's in this
- * file. An insert-once version bit twice while iterating on provider
- * config in the same session — a code change silently had no effect
- * because a stale row from before the change was still being served.
+ * file. An insert-once version silently served stale config across a
+ * session while iterating on it — worth avoiding here too.
  */
-export function getOrCreateDefaultCoder(): AgentConfig {
-  db.insert(agents)
-    .values(DEFAULT_CODER)
-    .onConflictDoUpdate({ target: agents.id, set: DEFAULT_CODER })
-    .run();
-  return DEFAULT_CODER;
+function upsert(config: AgentConfig): AgentConfig {
+  db.insert(agents).values(config).onConflictDoUpdate({ target: agents.id, set: config }).run();
+  return config;
 }
 
-export function getOrCreateDefaultReviewer(): AgentConfig {
-  db.insert(agents)
-    .values(DEFAULT_REVIEWER)
-    .onConflictDoUpdate({ target: agents.id, set: DEFAULT_REVIEWER })
-    .run();
-  return DEFAULT_REVIEWER;
+export function getOrCreateDefaultPlanner(): AgentConfig {
+  return upsert(DEFAULT_PLANNER);
+}
+
+export function getOrCreateDefaultArchitect(): AgentConfig {
+  return upsert(DEFAULT_ARCHITECT);
+}
+
+export function getOrCreateDefaultSkeptic(): AgentConfig {
+  return upsert(DEFAULT_SKEPTIC);
+}
+
+export function getAgent(id: string): AgentConfig | undefined {
+  return db.select().from(agents).where(eq(agents.id, id)).get() as AgentConfig | undefined;
 }

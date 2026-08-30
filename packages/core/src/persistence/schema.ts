@@ -10,38 +10,27 @@ export const agents = sqliteTable('agents', {
   toolAllowList: text('tool_allow_list', { mode: 'json' }).$type<string[]>().notNull(),
 });
 
-export const tasks = sqliteTable('tasks', {
+export const conversations = sqliteTable('conversations', {
   id: text('id').primaryKey(),
-  description: text('description').notNull(),
-  acceptanceCriteria: text('acceptance_criteria').notNull(),
-  repoPath: text('repo_path').notNull(),
-  baseBranch: text('base_branch').notNull(),
+  goal: text('goal').notNull(),
   status: text('status').notNull(),
-  assignedAgentId: text('assigned_agent_id'),
-  workspacePath: text('workspace_path'),
-  prUrl: text('pr_url'),
-  retryCount: integer('retry_count').notNull().default(0),
+  linearEpicUrl: text('linear_epic_url'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
 
-export const decisions = sqliteTable('decisions', {
+// One turn in a planning conversation — broadcast (toAgentId null) is the
+// normal case, since the whole point is that every agent sees every turn.
+export const messages = sqliteTable('messages', {
   id: text('id').primaryKey(),
-  agentId: text('agent_id').notNull(),
-  taskId: text('task_id'),
-  tick: integer('tick').notNull(),
-  kind: text('kind').notNull(),
-  detail: text('detail', { mode: 'json' }).notNull(),
+  conversationId: text('conversation_id').notNull(),
+  fromAgentId: text('from_agent_id').notNull(),
+  toAgentId: text('to_agent_id'),
+  intent: text('intent').notNull(),
+  content: text('content').notNull(),
+  payload: text('payload', { mode: 'json' }),
+  turn: integer('turn').notNull(),
   createdAt: text('created_at').notNull(),
-});
-
-export const approvals = sqliteTable('approvals', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull(),
-  status: text('status').notNull(), // 'pending' | 'approved' | 'rejected'
-  reviewNote: text('review_note'),
-  createdAt: text('created_at').notNull(),
-  resolvedAt: text('resolved_at'),
 });
 
 // One event log serving two purposes: rate-limit windows (count rows in the
@@ -55,57 +44,5 @@ export const providerCalls = sqliteTable('provider_calls', {
   inputTokens: integer('input_tokens').notNull(),
   outputTokens: integer('output_tokens').notNull(),
   costUsd: real('cost_usd').notNull(),
-  createdAt: text('created_at').notNull(),
-});
-
-// The neighbor-interaction primitive from the Game-of-Life metaphor — a
-// structured intent, not a free-text chat log. toAgentId null = broadcast.
-export const messages = sqliteTable('messages', {
-  id: text('id').primaryKey(),
-  fromAgentId: text('from_agent_id').notNull(),
-  toAgentId: text('to_agent_id'),
-  intent: text('intent').notNull(),
-  payload: text('payload', { mode: 'json' }).notNull(),
-  correlationId: text('correlation_id'),
-  tick: integer('tick').notNull(),
-  createdAt: text('created_at').notNull(),
-});
-
-// The reviewer agent's verdicts, kept separate from the human `approvals`
-// table on purpose — they're different authorities with different powers
-// (the reviewer can never reach `approved`), so conflating their records
-// would blur exactly the distinction the task status machine enforces.
-export const reviewVerdicts = sqliteTable('review_verdicts', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull(),
-  agentId: text('agent_id').notNull(),
-  verdict: text('verdict').notNull(), // 'approve' | 'request_changes'
-  feedback: text('feedback'),
-  createdAt: text('created_at').notNull(),
-});
-
-// Single-row persisted clock so `committee tick advance` continues counting
-// across separate CLI invocations instead of restarting at 0 every time.
-// `paused` is the kill switch: checked before every tick regardless of
-// which process or command is advancing the clock, so pausing is a hard
-// stop on ALL tick advancement, not just the daemon's own loop.
-export const schedulerState = sqliteTable('scheduler_state', {
-  id: text('id').primaryKey(),
-  currentTick: integer('current_tick').notNull(),
-  paused: integer('paused', { mode: 'boolean' }).notNull().default(false),
-});
-
-// The alert path for unattended operation — "even just a log line you
-// check" made persistent and queryable, since nobody's watching a
-// terminal. Raised when a per-agent ceiling is hit, or when a task
-// exhausts its retries and would otherwise just silently stop being
-// picked up by the scheduler with no one ever told.
-export const alerts = sqliteTable('alerts', {
-  id: text('id').primaryKey(),
-  kind: text('kind').notNull(), // 'ceiling_hit' | 'retries_exhausted' | 'turn_error'
-  message: text('message').notNull(),
-  agentId: text('agent_id'),
-  taskId: text('task_id'),
-  acknowledged: integer('acknowledged', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull(),
 });

@@ -24,7 +24,7 @@ function fakeAgent(overrides: Partial<AgentConfig> = {}): AgentConfig {
   return {
     id: `agent-${Math.random().toString(36).slice(2)}`,
     name: 'Test Agent',
-    role: 'coder',
+    role: 'planner',
     systemPrompt: 'x',
     providerPreference: ['ollama'],
     modelByProvider: { ollama: 'llama3.1:8b' },

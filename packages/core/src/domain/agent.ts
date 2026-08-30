@@ -1,4 +1,4 @@
-export type AgentRole = 'coder' | 'reviewer' | 'triage';
+export type AgentRole = 'planner' | 'architect' | 'skeptic';
 
 export interface AgentConfig {
   id: string;
@@ -9,14 +9,6 @@ export interface AgentConfig {
   providerPreference: string[];
   /** Which model to use on each provider in providerPreference, e.g. { anthropic: 'claude-sonnet-5' }. */
   modelByProvider: Record<string, string>;
+  /** Only meaningful for whichever agent finalizes the plan — the rest of the conversation is pure dialogue, no tool calls. */
   toolAllowList: string[];
-}
-
-export type AgentState = 'idle' | 'thinking' | 'acting' | 'blocked_on_approval';
-
-export interface AgentRuntimeState {
-  agentId: string;
-  state: AgentState;
-  currentTaskId?: string;
-  updatedAt: string;
 }
