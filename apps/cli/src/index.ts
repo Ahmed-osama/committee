@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { createInterface } from 'node:readline';
-import { resolve as resolvePath } from 'node:path';
+import { dirname, join, resolve as resolvePath } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { Command } from 'commander';
 import { generateText } from 'ai';
 import {
@@ -17,6 +20,7 @@ import {
   getTask,
   retryTask,
   transitionTask,
+  alertIfRetriesExhausted,
   GitWorkspace,
   PROVIDER_REGISTRY,
   isProviderConfigured,
@@ -29,6 +33,10 @@ import {
   advanceTicks,
   getAllMessages,
   getCurrentTick,
+  pauseScheduler,
+  resumeScheduler,
+  isPaused,
+  getUnacknowledgedAlerts,
 } from '@committee/core';
 
 const program = new Command();
@@ -218,6 +226,7 @@ task
       process.stdout.write('Rejection feedback for the agent: ');
       const note = (await lines.next()).value ?? '';
       reject(taskId, note);
+      alertIfRetriesExhausted(t);
       console.log(`Rejected. Run: committee task retry ${taskId}`);
     }
     rl.close();
@@ -264,6 +273,134 @@ program
     for (const m of getAllMessages(opts.since)) {
       const to = m.toAgentId ?? '(broadcast)';
       console.log(`[tick ${m.tick}] ${m.fromAgentId} -> ${to} (${m.intent}): ${JSON.stringify(m.payload)}`);
+    }
+  });
+
+const PID_FILE = join(homedir(), '.committee', 'daemon.pid');
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readDaemonPid(): number | undefined {
+  if (!existsSync(PID_FILE)) return undefined;
+  const pid = parseInt(readFileSync(PID_FILE, 'utf-8'), 10);
+  if (isProcessAlive(pid)) return pid;
+  unlinkSync(PID_FILE); // stale pid file from a process that didn't shut down cleanly (e.g. kill -9)
+  return undefined;
+}
+
+const daemon = program
+  .command('daemon')
+  .description('Long-running autonomous mode — advances ticks on an interval without a human driving each one');
+
+daemon
+  .command('run')
+  .description('Run in the foreground: advance one tick every --interval seconds until stopped')
+  .option('--interval <seconds>', 'seconds between ticks', (v) => parseInt(v, 10), 30)
+  .action(async (opts: { interval: number }) => {
+    const existingPid = readDaemonPid();
+    if (existingPid) {
+      console.error(`Daemon already running (pid ${existingPid}). Run 'committee daemon stop' first.`);
+      process.exit(1);
+    }
+    mkdirSync(dirname(PID_FILE), { recursive: true });
+    writeFileSync(PID_FILE, String(process.pid));
+
+    // A soft-stop flag, not a hard kill: SIGINT/SIGTERM let the tick
+    // currently in flight finish (including any in-progress LLM call)
+    // before exiting, rather than aborting mid-write. The hard kill switch
+    // is `committee daemon pause`, checked every tick via isPaused() —
+    // that's what stops NEW work from starting, from any process, not just
+    // this one's own signal handlers.
+    let stopRequested = false;
+    const requestStop = () => {
+      console.log('\nShutdown requested — finishing the current tick, then exiting.');
+      stopRequested = true;
+    };
+    process.on('SIGINT', requestStop);
+    process.on('SIGTERM', requestStop);
+
+    console.log(`Daemon started (pid ${process.pid}), interval ${opts.interval}s.`);
+    console.log(`Stop it with Ctrl+C here, or 'committee daemon stop' from another terminal.`);
+
+    const coder = getOrCreateDefaultCoder();
+    const reviewer = getOrCreateDefaultReviewer();
+
+    try {
+      while (!stopRequested) {
+        if (isPaused()) {
+          console.log(`[${new Date().toISOString()}] paused — run 'committee daemon resume' to continue.`);
+        } else {
+          await advanceTicks(1, {
+            agents: [coder, reviewer],
+            onTick: (tick, outcomes) => {
+              for (const outcome of outcomes) {
+                if (outcome.action === 'idle') continue;
+                console.log(`[tick ${tick}] ${outcome.agentId}: ${outcome.action} ${outcome.taskId ?? ''} — ${outcome.detail}`);
+              }
+            },
+          });
+          const alerts = getUnacknowledgedAlerts();
+          if (alerts.length > 0) {
+            console.log(`⚠ ${alerts.length} unacknowledged alert(s) — run 'committee daemon status' to see them.`);
+          }
+        }
+        if (stopRequested) break;
+        await sleep(opts.interval * 1000);
+      }
+    } finally {
+      if (existsSync(PID_FILE)) unlinkSync(PID_FILE);
+    }
+    console.log('Daemon stopped cleanly.');
+  });
+
+daemon
+  .command('pause')
+  .description('Kill switch: no new ticks advance (from any process) until resumed')
+  .action(() => {
+    pauseScheduler();
+    console.log("Scheduler paused. Run 'committee daemon resume' to continue.");
+  });
+
+daemon
+  .command('resume')
+  .description('Undo a pause')
+  .action(() => {
+    resumeScheduler();
+    console.log('Scheduler resumed.');
+  });
+
+daemon
+  .command('stop')
+  .description('Send a graceful shutdown signal to the running daemon process')
+  .action(() => {
+    const pid = readDaemonPid();
+    if (!pid) {
+      console.log('No daemon appears to be running.');
+      return;
+    }
+    process.kill(pid, 'SIGTERM');
+    console.log(`Sent shutdown signal to daemon (pid ${pid}) — it will finish its current tick and exit.`);
+  });
+
+daemon
+  .command('status')
+  .description('Whether the daemon is running, paused, and any unacknowledged alerts')
+  .action(() => {
+    const pid = readDaemonPid();
+    console.log(`Daemon process: ${pid ? `running (pid ${pid})` : 'not running'}`);
+    console.log(`Paused: ${isPaused()}`);
+    console.log(`Current tick: ${getCurrentTick()}`);
+    const alerts = getUnacknowledgedAlerts();
+    console.log(`Unacknowledged alerts: ${alerts.length}`);
+    for (const a of alerts) {
+      console.log(`  [${a.kind}] ${a.message}${a.taskId ? ` (task ${a.taskId})` : ''}`);
     }
   });
 

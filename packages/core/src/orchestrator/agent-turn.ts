@@ -5,7 +5,13 @@ import { recordDecision } from '../persistence/repositories/decision-repo.js';
 import { getLatestFeedback } from '../persistence/repositories/feedback.js';
 import { sendMessage } from '../persistence/repositories/message-repo.js';
 import { recordReviewVerdict } from '../persistence/repositories/review-repo.js';
-import { findNextCoderTask, findNextReviewTask, retryTask, transitionTask } from '../persistence/repositories/task-repo.js';
+import {
+  alertIfRetriesExhausted,
+  findNextCoderTask,
+  findNextReviewTask,
+  retryTask,
+  transitionTask,
+} from '../persistence/repositories/task-repo.js';
 import { GitWorkspace } from '../tools/dev-shop/git-workspace.js';
 import { createReviewTools } from '../tools/dev-shop/review-tools.js';
 import type { EventBus } from './event-bus.js';
@@ -13,7 +19,7 @@ import type { EventBus } from './event-bus.js';
 export interface AgentTurnOutcome {
   agentId: string;
   taskId?: string;
-  action: 'idle' | 'coded' | 'reviewed';
+  action: 'idle' | 'coded' | 'reviewed' | 'error';
   detail?: string;
 }
 
@@ -124,6 +130,8 @@ async function takeReviewerTurn(agent: AgentConfig, tick: number, bus: EventBus)
       tick,
     });
     bus.emitMessage(message);
+    alertIfRetriesExhausted(task);
+
     return { agentId: agent.id, taskId: task.id, action: 'reviewed', detail: 'requested changes' };
   }
 

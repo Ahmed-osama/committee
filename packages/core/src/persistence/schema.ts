@@ -86,7 +86,26 @@ export const reviewVerdicts = sqliteTable('review_verdicts', {
 
 // Single-row persisted clock so `committee tick advance` continues counting
 // across separate CLI invocations instead of restarting at 0 every time.
+// `paused` is the kill switch: checked before every tick regardless of
+// which process or command is advancing the clock, so pausing is a hard
+// stop on ALL tick advancement, not just the daemon's own loop.
 export const schedulerState = sqliteTable('scheduler_state', {
   id: text('id').primaryKey(),
   currentTick: integer('current_tick').notNull(),
+  paused: integer('paused', { mode: 'boolean' }).notNull().default(false),
+});
+
+// The alert path for unattended operation — "even just a log line you
+// check" made persistent and queryable, since nobody's watching a
+// terminal. Raised when a per-agent ceiling is hit, or when a task
+// exhausts its retries and would otherwise just silently stop being
+// picked up by the scheduler with no one ever told.
+export const alerts = sqliteTable('alerts', {
+  id: text('id').primaryKey(),
+  kind: text('kind').notNull(), // 'ceiling_hit' | 'retries_exhausted' | 'turn_error'
+  message: text('message').notNull(),
+  agentId: text('agent_id'),
+  taskId: text('task_id'),
+  acknowledged: integer('acknowledged', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at').notNull(),
 });

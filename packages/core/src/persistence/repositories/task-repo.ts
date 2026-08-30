@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull, lt } from 'drizzle-orm';
 import { canTransition, type Task, type TaskStatus } from '../../domain/task.js';
 import { db } from '../db.js';
 import { tasks } from '../schema.js';
+import { recordAlert } from './alert-repo.js';
 
 export function createTask(input: {
   description: string;
@@ -62,6 +63,22 @@ export function retryTask(id: string): Task {
     throw new Error(`Task ${id} hit the retry ceiling (${MAX_RETRIES}) and stays rejected — create a new task instead.`);
   }
   return transitionTask(id, 'in_progress', { retryCount: task.retryCount + 1 });
+}
+
+/**
+ * Call right after rejecting a task (human or reviewer). Once retryCount is
+ * already at the ceiling, findNextCoderTask's query excludes it forever —
+ * it would just silently stop being worked on with no one ever told, which
+ * is exactly the failure mode an unattended daemon needs an alert for.
+ */
+export function alertIfRetriesExhausted(task: Task): void {
+  if (task.retryCount >= MAX_RETRIES) {
+    recordAlert({
+      kind: 'retries_exhausted',
+      message: `Task ${task.id} exhausted its retry ceiling (${MAX_RETRIES}) and will not be auto-retried. Needs human attention.`,
+      taskId: task.id,
+    });
+  }
 }
 
 /**

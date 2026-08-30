@@ -54,7 +54,9 @@ export { getLatestFeedback } from './persistence/repositories/feedback.js';
 export { sendMessage, getMessagesForAgent, getAllMessages } from './persistence/repositories/message-repo.js';
 export { recordReviewVerdict, getLatestReviewerFeedback } from './persistence/repositories/review-repo.js';
 export type { ReviewVerdict } from './persistence/repositories/review-repo.js';
-export { getCurrentTick } from './persistence/repositories/scheduler-repo.js';
+export { getCurrentTick, pauseScheduler, resumeScheduler, isPaused } from './persistence/repositories/scheduler-repo.js';
+export { recordAlert, getUnacknowledgedAlerts, acknowledgeAllAlerts } from './persistence/repositories/alert-repo.js';
+export type { Alert, AlertKind } from './persistence/repositories/alert-repo.js';
 export {
   MAX_RETRIES,
   createTask,
@@ -64,4 +66,5 @@ export {
   transitionTask,
   findNextCoderTask,
   findNextReviewTask,
+  alertIfRetriesExhausted,
 } from './persistence/repositories/task-repo.js';
