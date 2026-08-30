@@ -2,6 +2,7 @@ import { generateText, hasToolCall, stepCountIs, type ToolSet } from 'ai';
 import type { AgentConfig } from '../domain/agent.js';
 import type { DecisionRecord } from '../domain/run.js';
 import type { Task } from '../domain/task.js';
+import type { ToolDefinition } from '../domain/tool.js';
 import { computeCostUsd } from '../provider/pricing.js';
 import { PROVIDER_REGISTRY } from '../provider/provider-registry.js';
 import { selectProvider } from '../provider/provider-router.js';
@@ -14,6 +15,8 @@ export interface AgentLoopResult {
   finishReason: string;
   stepCount: number;
   finalSummary: string | undefined;
+  /** Which of stopToolNames actually ended the loop, if any — lets a reviewer's turn tell approve_for_human apart from request_changes. */
+  terminalTool: string | undefined;
   providerId: string;
   modelId: string;
 }
@@ -22,11 +25,22 @@ export interface RunAgentLoopOptions {
   agent: AgentConfig;
   task: Task;
   workspace: GitWorkspace;
+  /** Defaults to the coder's tool set — a reviewer's turn passes createReviewTools instead. */
+  buildTools?: (workspace: GitWorkspace) => Record<string, ToolDefinition>;
+  /** Tool names that end the loop when called. Defaults to ['finish_task']. */
+  stopToolNames?: string[];
+  /** Appended to the prompt, telling the agent how to end its turn. Defaults to the coder's finish_task wording. */
+  closingInstruction?: string;
   maxSteps?: number;
   /** Rejection feedback from a previous review round, fed back into context on retry. */
   feedback?: string;
   onDecision?: (record: Omit<DecisionRecord, 'id' | 'createdAt'>) => void;
 }
+
+const DEFAULT_STOP_TOOLS = ['finish_task'];
+const DEFAULT_CLOSING_INSTRUCTION =
+  'Use the available tools to explore the workspace, make the change, and run tests. ' +
+  'Call finish_task once tests pass and you are confident the change satisfies the acceptance criteria.';
 
 /**
  * The perceive→think→act loop, made concrete: "perceive" is the prompt we
@@ -34,10 +48,22 @@ export interface RunAgentLoopOptions {
  * "think" is each generateText step, "act" is whichever tool the model
  * calls. The AI SDK's stopWhen/tools-with-execute machinery drives the
  * repeat-until-done part — that's HTTP-client plumbing worth reusing, not
- * an agent concept worth hand-rolling.
+ * an agent concept worth hand-rolling. Generic across roles: a coder and a
+ * reviewer both run through this exact function, differing only in which
+ * tools they're handed and which tool name ends their turn.
  */
 export async function runAgentLoop(opts: RunAgentLoopOptions): Promise<AgentLoopResult> {
-  const { agent, task, workspace, maxSteps = 12, feedback, onDecision } = opts;
+  const {
+    agent,
+    task,
+    workspace,
+    buildTools = createDevShopTools,
+    stopToolNames = DEFAULT_STOP_TOOLS,
+    closingInstruction = DEFAULT_CLOSING_INSTRUCTION,
+    maxSteps = 12,
+    feedback,
+    onDecision,
+  } = opts;
 
   // Selected once per run, not per step: one generateText() call is pinned
   // to one model for its whole multi-step tool loop, so there's nowhere to
@@ -47,7 +73,7 @@ export async function runAgentLoop(opts: RunAgentLoopOptions): Promise<AgentLoop
   const { providerId, modelId } = selectProvider(agent);
   const provider = PROVIDER_REGISTRY[providerId];
 
-  const allowedTools = filterForAgent(createDevShopTools(workspace), agent.toolAllowList);
+  const allowedTools = filterForAgent(buildTools(workspace), agent.toolAllowList);
   const tools: ToolSet = toToolSet(allowedTools);
 
   // Folded into the user turn rather than passed as `system`: some small
@@ -58,20 +84,18 @@ export async function runAgentLoop(opts: RunAgentLoopOptions): Promise<AgentLoop
   // before assuming it was a bug in this loop.
   const promptParts = [agent.systemPrompt, `Task: ${task.description}`, `Acceptance criteria: ${task.acceptanceCriteria}`];
   if (feedback) {
-    promptParts.push(`A human reviewer rejected your previous attempt with this feedback: ${feedback}`);
+    promptParts.push(`A previous reviewer rejected this attempt with this feedback: ${feedback}`);
   }
-  promptParts.push(
-    'Use the available tools to explore the workspace, make the change, and run tests. ' +
-      'Call finish_task once tests pass and you are confident the change satisfies the acceptance criteria.',
-  );
+  promptParts.push(closingInstruction);
 
   let finalSummary: string | undefined;
+  let terminalTool: string | undefined;
 
   const result = await generateText({
     model: provider.model(modelId),
     prompt: promptParts.join('\n\n'),
     tools,
-    stopWhen: [stepCountIs(maxSteps), hasToolCall('finish_task')],
+    stopWhen: [stepCountIs(maxSteps), hasToolCall(...stopToolNames)],
     onStepFinish: (step) => {
       recordProviderCall({
         agentId: agent.id,
@@ -90,8 +114,10 @@ export async function runAgentLoop(opts: RunAgentLoopOptions): Promise<AgentLoop
           kind: 'tool_call',
           detail: { name: call.toolName, input: call.input },
         });
-        if (call.toolName === 'finish_task') {
-          finalSummary = (call.input as { summary?: string }).summary;
+        if (stopToolNames.includes(call.toolName)) {
+          terminalTool = call.toolName;
+          const input = call.input as Record<string, unknown>;
+          finalSummary = (input.summary ?? input.note ?? input.feedback) as string | undefined;
         }
       }
       // Recording results, not just calls, matters here specifically: a
@@ -117,18 +143,19 @@ export async function runAgentLoop(opts: RunAgentLoopOptions): Promise<AgentLoop
 
   // Some models (verified: Groq's openai/gpt-oss-120b) do everything right —
   // read the files, make the correct fix, run tests, see them pass — and
-  // then conclude with a plain-text summary instead of calling finish_task,
+  // then conclude with a plain-text summary instead of calling a stop tool,
   // despite being told to. Rather than fight every model's own conclusion
-  // style, treat a natural stop as equivalent to finish_task: if the last
-  // step made no tool calls, the model chose to stop on its own (a step
-  // that got cut off by the maxSteps ceiling mid-work would still contain a
-  // tool call), so its text is the summary. This is safe specifically
-  // because human review re-verifies independently either way — the
-  // approval gate doesn't trust either kind of "done" signal blindly.
+  // style, treat a natural stop as equivalent: if the last step made no
+  // tool calls, the model chose to stop on its own (a step that got cut off
+  // by the maxSteps ceiling mid-work would still contain a tool call), so
+  // its text is the summary. Only meaningful for the coder's single stop
+  // tool (finish_task) — a reviewer's two possible verdicts can't be
+  // inferred from plain text, so terminalTool stays undefined there and the
+  // caller treats it as "no verdict yet" rather than guessing which one.
   const lastStep = result.steps.at(-1);
   if (!finalSummary && lastStep && lastStep.toolCalls.length === 0 && lastStep.text) {
     finalSummary = lastStep.text;
   }
 
-  return { finishReason: result.finishReason, stepCount: result.steps.length, finalSummary, providerId, modelId };
+  return { finishReason: result.finishReason, stepCount: result.steps.length, finalSummary, terminalTool, providerId, modelId };
 }

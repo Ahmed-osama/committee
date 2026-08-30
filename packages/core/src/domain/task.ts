@@ -2,6 +2,7 @@ export type TaskStatus =
   | 'pending'
   | 'claimed'
   | 'in_progress'
+  | 'pending_auto_review'
   | 'awaiting_review'
   | 'approved'
   | 'rejected'
@@ -28,11 +29,17 @@ export interface Task {
  * `done`/`approved` without passing through `awaiting_review` first —
  * that's the human-approval-before-ship invariant from the plan,
  * enforced here rather than by orchestrator convention.
+ *
+ * `pending_auto_review` is the reviewer agent's own inbox, distinct from
+ * `awaiting_review` (the human's inbox) — the reviewer can only forward a
+ * task into `awaiting_review` or bounce it back to `rejected`, the exact
+ * same two options a human has from there. It has no path to `approved`.
  */
 export const TASK_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   pending: ['claimed'],
   claimed: ['in_progress'],
-  in_progress: ['awaiting_review'],
+  in_progress: ['pending_auto_review'],
+  pending_auto_review: ['awaiting_review', 'rejected'],
   awaiting_review: ['approved', 'rejected'],
   approved: ['done'],
   rejected: ['in_progress'],

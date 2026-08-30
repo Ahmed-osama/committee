@@ -8,9 +8,9 @@ import {
   runAgentLoop,
   approve,
   reject,
-  submitForReview,
   getOrCreateDefaultCoder,
-  getLatestRejectionFeedback,
+  getOrCreateDefaultReviewer,
+  getLatestFeedback,
   recordDecision,
   getDecisionsForTask,
   createTask,
@@ -26,6 +26,9 @@ import {
   saveTask,
   tryGetGitHubRemote,
   createPullRequest,
+  advanceTicks,
+  getAllMessages,
+  getCurrentTick,
 } from '@committee/core';
 
 const program = new Command();
@@ -112,9 +115,9 @@ async function runLoopAndReport(taskId: string, feedback?: string): Promise<void
   console.log(`\nprovider=${result.providerId} model=${result.modelId} finishReason=${result.finishReason} steps=${result.stepCount}`);
 
   if (result.finalSummary) {
-    submitForReview(taskId);
+    transitionTask(taskId, 'pending_auto_review');
     console.log(`\nAgent believes it's done: ${result.finalSummary}`);
-    console.log(`Run: committee task review ${taskId}`);
+    console.log(`Run: committee tick advance 1   (lets the reviewer agent look at it before it reaches you)`);
   } else {
     console.log(`\nAgent did not call finish_task within its step budget — task remains in_progress.`);
     console.log(`Inspect ${workspace.path} manually, or extend --max-steps and re-run.`);
@@ -151,7 +154,8 @@ task
     const t = getTask(taskId);
     if (!t) throw new Error(`Task not found: ${taskId}`);
     if (t.status !== 'awaiting_review') {
-      console.log(`Task ${taskId} is '${t.status}', not awaiting_review — nothing to review yet.`);
+      const hint = t.status === 'pending_auto_review' ? " — run 'committee tick advance 1' to let the reviewer look at it first" : '';
+      console.log(`Task ${taskId} is '${t.status}', not awaiting_review — nothing to review yet${hint}.`);
       return;
     }
     const workspace = GitWorkspace.reattach(t);
@@ -224,9 +228,43 @@ task
   .description('Re-run the agent on a rejected task, feeding back the reviewer note')
   .argument('<taskId>')
   .action(async (taskId: string) => {
-    const feedback = getLatestRejectionFeedback(taskId);
+    const feedback = getLatestFeedback(taskId);
     retryTask(taskId);
     await runLoopAndReport(taskId, feedback);
+  });
+
+program
+  .command('tick')
+  .description('Advance the scheduler — every agent gets a chance to react to whatever needs its attention')
+  .argument('<count>', 'number of ticks to advance', (v) => parseInt(v, 10))
+  .action(async (count: number) => {
+    const coder = getOrCreateDefaultCoder();
+    const reviewer = getOrCreateDefaultReviewer();
+    await advanceTicks(count, {
+      agents: [coder, reviewer],
+      onTick: (tick, outcomes) => {
+        console.log(`\n--- tick ${tick} ---`);
+        for (const outcome of outcomes) {
+          if (outcome.action === 'idle') {
+            console.log(`  ${outcome.agentId}: idle (nothing needs its attention)`);
+          } else {
+            console.log(`  ${outcome.agentId}: ${outcome.action} on task ${outcome.taskId} — ${outcome.detail}`);
+          }
+        }
+      },
+    });
+    console.log(`\nNow at tick ${getCurrentTick()}. Run 'committee task review <id>' for anything awaiting_review.`);
+  });
+
+program
+  .command('messages')
+  .description('Inspect the inter-agent message log (the neighbor-interaction record)')
+  .option('--since <tick>', 'only show messages after this tick', (v) => parseInt(v, 10), -1)
+  .action((opts: { since: number }) => {
+    for (const m of getAllMessages(opts.since)) {
+      const to = m.toAgentId ?? '(broadcast)';
+      console.log(`[tick ${m.tick}] ${m.fromAgentId} -> ${to} (${m.intent}): ${JSON.stringify(m.payload)}`);
+    }
   });
 
 program.parseAsync(process.argv).catch((err) => {

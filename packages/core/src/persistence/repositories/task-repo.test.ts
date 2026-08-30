@@ -14,14 +14,14 @@ test('retryTask enforces the retry ceiling from the plan\'s safety invariants', 
   transitionTask(t.id, 'in_progress');
 
   for (let expected = 1; expected <= 3; expected++) {
-    transitionTask(t.id, 'awaiting_review');
+    transitionTask(t.id, 'pending_auto_review');
     transitionTask(t.id, 'rejected');
     const retried = retryTask(t.id);
     assert.equal(retried.retryCount, expected);
     assert.equal(retried.status, 'in_progress');
   }
 
-  transitionTask(t.id, 'awaiting_review');
+  transitionTask(t.id, 'pending_auto_review');
   transitionTask(t.id, 'rejected');
   assert.throws(() => retryTask(t.id), /retry ceiling/, 'a 4th retry must be refused, not silently allowed');
 });

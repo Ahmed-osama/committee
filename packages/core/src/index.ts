@@ -33,13 +33,35 @@ export { computeCostUsd } from './provider/pricing.js';
 export { GitWorkspace } from './tools/dev-shop/git-workspace.js';
 export type { CommandResult } from './tools/dev-shop/git-workspace.js';
 export { createDevShopTools } from './tools/dev-shop/dev-shop-tools.js';
+export { createReviewTools } from './tools/dev-shop/review-tools.js';
 export { filterForAgent, toToolSet } from './tools/tool-registry.js';
 export { createPullRequest, tryGetGitHubRemote, parseGitHubRemote } from './tools/dev-shop/create-pr.js';
 export type { CreatePrInput, CreatePrResult } from './tools/dev-shop/create-pr.js';
 
+export { EventBus } from './orchestrator/event-bus.js';
+export type { TaskStatusChangedEvent } from './orchestrator/event-bus.js';
+export { takeAgentTurn } from './orchestrator/agent-turn.js';
+export type { AgentTurnOutcome } from './orchestrator/agent-turn.js';
+export { advanceTicks } from './orchestrator/tick-scheduler.js';
+export type { AdvanceTicksOptions } from './orchestrator/tick-scheduler.js';
+
 export { db } from './persistence/db.js';
 export * as schema from './persistence/schema.js';
-export { getOrCreateDefaultCoder } from './persistence/repositories/agent-repo.js';
+export { getOrCreateDefaultCoder, getOrCreateDefaultReviewer } from './persistence/repositories/agent-repo.js';
 export { getLatestRejectionFeedback, requestApproval, resolveApproval } from './persistence/repositories/approval-repo.js';
 export { recordDecision, getDecisionsForTask } from './persistence/repositories/decision-repo.js';
-export { MAX_RETRIES, createTask, getTask, retryTask, saveTask, transitionTask } from './persistence/repositories/task-repo.js';
+export { getLatestFeedback } from './persistence/repositories/feedback.js';
+export { sendMessage, getMessagesForAgent, getAllMessages } from './persistence/repositories/message-repo.js';
+export { recordReviewVerdict, getLatestReviewerFeedback } from './persistence/repositories/review-repo.js';
+export type { ReviewVerdict } from './persistence/repositories/review-repo.js';
+export { getCurrentTick } from './persistence/repositories/scheduler-repo.js';
+export {
+  MAX_RETRIES,
+  createTask,
+  getTask,
+  retryTask,
+  saveTask,
+  transitionTask,
+  findNextCoderTask,
+  findNextReviewTask,
+} from './persistence/repositories/task-repo.js';

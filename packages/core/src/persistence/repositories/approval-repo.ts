@@ -24,12 +24,17 @@ export function resolveApproval(taskId: string, status: Exclude<ApprovalStatus, 
     .run();
 }
 
-export function getLatestRejectionFeedback(taskId: string): string | undefined {
+export function getLatestHumanRejectionFeedback(taskId: string): { note: string; at: string } | undefined {
   const row = db
     .select()
     .from(approvals)
     .where(eq(approvals.taskId, taskId))
     .orderBy(desc(approvals.createdAt))
     .get() as Approval | undefined;
-  return row?.status === 'rejected' ? row.reviewNote : undefined;
+  if (!row || row.status !== 'rejected' || !row.reviewNote) return undefined;
+  return { note: row.reviewNote, at: row.resolvedAt ?? row.createdAt };
+}
+
+export function getLatestRejectionFeedback(taskId: string): string | undefined {
+  return getLatestHumanRejectionFeedback(taskId)?.note;
 }

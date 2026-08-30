@@ -31,9 +31,28 @@ const DEFAULT_CODER: AgentConfig = {
   toolAllowList: ['list_files', 'read_file', 'write_file', 'run_tests', 'run_lint', 'finish_task'],
 };
 
+const DEFAULT_REVIEWER: AgentConfig = {
+  id: 'default-reviewer',
+  name: 'Reviewer',
+  role: 'reviewer',
+  systemPrompt:
+    'You are a skeptical code reviewer. You independently verify the diff and test results yourself — you never ' +
+    "trust the coder's summary at face value. You only approve work you would be comfortable shipping yourself. " +
+    'A diff that changes an unrelated file, removes test coverage, or claims success without actually running ' +
+    'tests is always a reason to request changes, never to approve.',
+  providerPreference: ['groq', 'gemini', 'deepseek', 'glm', 'ollama', 'anthropic'],
+  modelByProvider: {
+    groq: 'qwen/qwen3.8-27b',
+    gemini: 'gemini-3.6-flash',
+    ollama: 'llama3.1:8b',
+    anthropic: 'claude-sonnet-5',
+  },
+  toolAllowList: ['list_files', 'read_file', 'run_tests', 'run_lint', 'approve_for_human', 'request_changes'],
+};
+
 /**
- * Upserts rather than insert-once: this is a code-defined default, not a
- * user-customized agent, so it should always reflect whatever's in this
+ * Upserts rather than insert-once: these are code-defined defaults, not
+ * user-customized agents, so they should always reflect whatever's in this
  * file. An insert-once version bit twice while iterating on provider
  * config in the same session — a code change silently had no effect
  * because a stale row from before the change was still being served.
@@ -44,4 +63,12 @@ export function getOrCreateDefaultCoder(): AgentConfig {
     .onConflictDoUpdate({ target: agents.id, set: DEFAULT_CODER })
     .run();
   return DEFAULT_CODER;
+}
+
+export function getOrCreateDefaultReviewer(): AgentConfig {
+  db.insert(agents)
+    .values(DEFAULT_REVIEWER)
+    .onConflictDoUpdate({ target: agents.id, set: DEFAULT_REVIEWER })
+    .run();
+  return DEFAULT_REVIEWER;
 }

@@ -17,25 +17,43 @@ function fakeTask(status: TaskStatus, overrides: Partial<Task> = {}): Task {
   };
 }
 
+const ALL_STATUSES: TaskStatus[] = [
+  'pending',
+  'claimed',
+  'in_progress',
+  'pending_auto_review',
+  'awaiting_review',
+  'approved',
+  'rejected',
+  'done',
+];
+
 test('the human-approval invariant: no status can reach done/approved except through awaiting_review -> approved', () => {
-  const allStatuses: TaskStatus[] = ['pending', 'claimed', 'in_progress', 'awaiting_review', 'approved', 'rejected', 'done'];
-  for (const from of allStatuses) {
+  for (const from of ALL_STATUSES) {
     if (from === 'awaiting_review') continue;
     assert.equal(canTransition(from, 'approved'), false, `${from} -> approved must be illegal`);
   }
   assert.equal(canTransition('awaiting_review', 'approved'), true);
 
-  for (const from of allStatuses) {
+  for (const from of ALL_STATUSES) {
     if (from === 'approved') continue;
     assert.equal(canTransition(from, 'done'), false, `${from} -> done must be illegal (only approved -> done)`);
   }
   assert.equal(canTransition('approved', 'done'), true);
 });
 
-test('in_progress cannot skip straight to done or approved', () => {
+test('the reviewer inbox (pending_auto_review) can never reach approved directly — only forward to the human inbox or bounce back', () => {
+  assert.equal(canTransition('pending_auto_review', 'awaiting_review'), true);
+  assert.equal(canTransition('pending_auto_review', 'rejected'), true);
+  assert.equal(canTransition('pending_auto_review', 'approved'), false);
+  assert.equal(canTransition('pending_auto_review', 'done'), false);
+});
+
+test('in_progress cannot skip straight to done, approved, or the human inbox', () => {
   assert.equal(canTransition('in_progress', 'done'), false);
   assert.equal(canTransition('in_progress', 'approved'), false);
-  assert.equal(canTransition('in_progress', 'awaiting_review'), true);
+  assert.equal(canTransition('in_progress', 'awaiting_review'), false);
+  assert.equal(canTransition('in_progress', 'pending_auto_review'), true);
 });
 
 test('transition() throws on an illegal move instead of silently applying it', () => {

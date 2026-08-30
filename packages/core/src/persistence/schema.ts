@@ -57,3 +57,36 @@ export const providerCalls = sqliteTable('provider_calls', {
   costUsd: real('cost_usd').notNull(),
   createdAt: text('created_at').notNull(),
 });
+
+// The neighbor-interaction primitive from the Game-of-Life metaphor — a
+// structured intent, not a free-text chat log. toAgentId null = broadcast.
+export const messages = sqliteTable('messages', {
+  id: text('id').primaryKey(),
+  fromAgentId: text('from_agent_id').notNull(),
+  toAgentId: text('to_agent_id'),
+  intent: text('intent').notNull(),
+  payload: text('payload', { mode: 'json' }).notNull(),
+  correlationId: text('correlation_id'),
+  tick: integer('tick').notNull(),
+  createdAt: text('created_at').notNull(),
+});
+
+// The reviewer agent's verdicts, kept separate from the human `approvals`
+// table on purpose — they're different authorities with different powers
+// (the reviewer can never reach `approved`), so conflating their records
+// would blur exactly the distinction the task status machine enforces.
+export const reviewVerdicts = sqliteTable('review_verdicts', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(),
+  agentId: text('agent_id').notNull(),
+  verdict: text('verdict').notNull(), // 'approve' | 'request_changes'
+  feedback: text('feedback'),
+  createdAt: text('created_at').notNull(),
+});
+
+// Single-row persisted clock so `committee tick advance` continues counting
+// across separate CLI invocations instead of restarting at 0 every time.
+export const schedulerState = sqliteTable('scheduler_state', {
+  id: text('id').primaryKey(),
+  currentTick: integer('current_tick').notNull(),
+});

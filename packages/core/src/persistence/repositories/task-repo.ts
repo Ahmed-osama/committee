@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray, isNull, lt } from 'drizzle-orm';
 import { canTransition, type Task, type TaskStatus } from '../../domain/task.js';
 import { db } from '../db.js';
 import { tasks } from '../schema.js';
@@ -62,4 +62,46 @@ export function retryTask(id: string): Task {
     throw new Error(`Task ${id} hit the retry ceiling (${MAX_RETRIES}) and stays rejected — create a new task instead.`);
   }
   return transitionTask(id, 'in_progress', { retryCount: task.retryCount + 1 });
+}
+
+/**
+ * What a coder agent is "due" to act on this tick: a task it's already
+ * mid-flight on, or one that just got bounced back (by a human or the
+ * reviewer) with retries still available — auto-retrying a rejection is
+ * exactly the "keeps reacting without a human prompt" behavior ticks exist
+ * for. Oldest first, one task per turn — a cell reacts once per generation.
+ */
+export function findNextCoderTask(agentId: string): Task | undefined {
+  const active = db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.assignedAgentId, agentId), inArray(tasks.status, ['claimed', 'in_progress'])))
+    .orderBy(tasks.updatedAt)
+    .get() as Task | undefined;
+  if (active) return active;
+
+  const retriable = db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.assignedAgentId, agentId), eq(tasks.status, 'rejected'), lt(tasks.retryCount, MAX_RETRIES)))
+    .orderBy(tasks.updatedAt)
+    .get() as Task | undefined;
+  if (retriable) return retriable;
+
+  // Freshly created tasks have no assignedAgentId yet — this is how an
+  // unclaimed task actually gets picked up by tick-driven scheduling
+  // instead of only ever working via the explicit `task create` CLI flow.
+  return db
+    .select()
+    .from(tasks)
+    .where(and(isNull(tasks.assignedAgentId), eq(tasks.status, 'pending')))
+    .orderBy(tasks.createdAt)
+    .get() as Task | undefined;
+}
+
+/** The reviewer's inbox — oldest task waiting for an automated pass, regardless of which coder produced it. */
+export function findNextReviewTask(): Task | undefined {
+  return db.select().from(tasks).where(eq(tasks.status, 'pending_auto_review')).orderBy(tasks.updatedAt).get() as
+    | Task
+    | undefined;
 }
