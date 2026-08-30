@@ -9,7 +9,8 @@
     "test": "turbo run test",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
-    "cli": "pnpm --filter @committee/cli cli"
+    "cli": "pnpm --filter @committee/cli cli",
+    "dev": "pnpm --filter @committee/cli cli serve"
   },
   "devDependencies": {
     "turbo": "^2.10.12",
