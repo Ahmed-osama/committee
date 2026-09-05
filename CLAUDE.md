@@ -16,6 +16,12 @@ libraries consumed via workspace imports (e.g. `@committee/core`).
 ## Working style
 - Keep responses short; skip trailing "here's what I did" summaries unless asked.
 - Explain non-obvious choices briefly as we go, since the point here is learning.
+- After finishing a task that changes structure, conventions, or direction, update the
+  relevant CLAUDE.md (this file, or a package-level one) in the same turn — don't let
+  docs drift from code. See `packages/core/CLAUDE.md` for that package's subsystem map.
+- When a moment in the work matches an existing Claude Code skill, subagent, or other
+  ecosystem tool (not yet used in this session), point it out — briefly, once — rather
+  than defaulting to a manual approach.
 
 ## Direction (important context, not just history)
 Earlier phases built a bespoke task-tracking/execution pipeline (SQLite task state
