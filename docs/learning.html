@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>committee — learning journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --blue: #5b9bd5;      --blue-dk: #3f7cb8;
+    --cream: #f5e2cf;     --cream-dk: #d9bd98;
+    --green: #8fc9a0;     --green-dk: #5fa374;
+    --yellow: #f4d35e;    --yellow-dk: #d1ab2e;
+    --coral: #f2836b;     --coral-dk: #d45f45;
+    --purple: #b8a4d4;    --purple-dk: #8f77b3;
+    --paper: #ffffff;
+    --bg: #f6f5f2;
+    --muted: #6b6b6b;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  h1, h2, .display { font-family: 'Baloo 2', 'Nunito', sans-serif; }
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 54px 24px 140px;
+  }
+  header.hero {
+    padding: 0 0 32px;
+    border-bottom: 1px dashed #ddd6c4;
+    margin-bottom: 40px;
+  }
+  header.hero .crumb {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  header.hero .crumb:hover { text-decoration: underline; }
+  header.hero h1 { font-size: 36px; font-weight: 800; margin: 10px 0 8px; letter-spacing: -0.01em; }
+  header.hero p { font-size: 15.5px; color: #444; max-width: 600px; margin: 0; }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    background: var(--ink);
+    color: #fff;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 6px 16px;
+    border-radius: 999px;
+  }
+
+  article.entry {
+    background: var(--paper);
+    border: 1px solid #ece7d9;
+    box-shadow: 0 10px 28px -18px rgba(0,0,0,0.18);
+    border-radius: 18px;
+    padding: 26px 28px;
+    margin-bottom: 28px;
+  }
+  article.entry time {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  article.entry h2 {
+    font-size: 21px;
+    font-weight: 700;
+    margin: 0 0 12px;
+    letter-spacing: -0.005em;
+  }
+  article.entry p { font-size: 15px; margin: 0 0 12px; color: #2b2b2b; }
+  article.entry pre {
+    background: #1e1e1e;
+    color: #eee;
+    padding: 14px 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 13px;
+    margin: 0 0 14px;
+  }
+  article.entry code { font-family: "SF Mono", Menlo, monospace; }
+  article.entry :not(pre) > code {
+    background: #efe9da;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 0.9em;
+  }
+  .reading {
+    background: var(--cream);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-top: 4px;
+  }
+  .reading .label {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .reading ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  .reading li { margin-bottom: 2px; }
+
+  .tags { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip-tag {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+  }
+  .chip-tag.js { background: var(--yellow); }
+  .chip-tag.frontend { background: var(--blue); color: #fff; }
+  .chip-tag.ai { background: var(--purple); color: #fff; }
+  .chip-tag.node { background: var(--green); }
+  .chip-tag.testing { background: var(--coral); color: #fff; }
+  .chip-tag.architecture { background: var(--cream); }
+
+  .entry-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 12px; flex-wrap: wrap; }
+  .tags { margin-top: 0; }
+
+  .read-toggle {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 12.5px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .read-toggle:hover { background: #f2eee4; }
+  article.entry.is-read { opacity: 0.55; }
+  article.entry.is-read .read-toggle {
+    background: var(--green);
+    border-color: var(--green-dk);
+  }
+
+  .live-indicator { font-size: 12px; font-weight: 700; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; }
+  .live-indicator .dot { width: 8px; height: 8px; border-radius: 50%; background: #bbb; }
+  .live-indicator.on .dot { background: var(--green-dk); animation: pulse-dot 1.6s infinite; }
+  .live-indicator.off .dot { background: var(--coral-dk); }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  footer.note {
+    max-width: 660px;
+    font-size: 13px;
+    color: var(--muted);
+    border-top: 1px dashed #ddd6c4;
+    padding-top: 18px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <a class="crumb" href="index.html">&larr; committee living docs</a>
+    <h1>Learning journal</h1>
+    <div class="chip">FRONTEND · JS · AI</div>
+    <p style="margin-top:14px">Tips, concept explanations, and reading recommendations pulled from
+    whatever actually happened while building this project — newest first.</p>
+    <div class="live-indicator off" id="liveIndicator"><span class="dot"></span><span id="liveIndicatorLabel">checking for live updates…</span></div>
+  </header>
+
+  <div id="journal">
+
+    <article class="entry" data-entry-id="2026-09-05-proactive-and-reactive-rate-limiting">
+      <time datetime="2026-09-05">September 5, 2026</time>
+      <h2>Two layers of provider fallback: quota tracking vs. failure cooldown</h2>
+      <p><code>provider-router.ts</code>'s <code>selectProvider</code> checks a rate-limit
+      tracker <em>before</em> ever calling a provider — it knows the configured request/day
+      and token/day budgets and refuses to pick a provider it expects to be exhausted. But
+      that's a static model of the world; a free-tier quota can be stricter in practice than
+      what's configured, or a provider can just be down. So <code>generate-for-agent.ts</code>
+      wraps the actual call in a loop: on failure it calls <code>markProviderDown</code>
+      (<code>provider-health.ts</code>) to set a 5-minute in-memory cooldown keyed by
+      <code>providerId:modelId</code>, then retries the <em>next</em> entry in the agent's
+      provider preference list. The next call to <code>selectProvider</code> sees that
+      cooldown via <code>isProviderDown</code> and skips it automatically.</p>
+      <p>The split matters: the proactive tracker prevents wasting calls on a provider you
+      already know is over budget, while the reactive cooldown handles the failures you
+      can't predict from your own bookkeeping. This is the same shape as a circuit
+      breaker — a failure trips a breaker that stays open for a fixed window, so the system
+      routes around a bad dependency without hammering it, and self-heals once the window
+      elapses. Neither layer alone is enough: proactive-only misses real-world surprises,
+      reactive-only wastes calls discovering limits you already knew about.</p>
+      <div class="reading">
+        <span class="label">Further reading</span>
+        <ul>
+          <li>Martin Fowler's <em>"CircuitBreaker"</em> pattern write-up — the classic
+          description of trip/cooldown/retry that this in-memory <code>downUntil</code> map
+          is a minimal version of.</li>
+        </ul>
+      </div>
+      <div class="entry-footer">
+        <div class="tags">
+          <span class="chip-tag ai">AI/LLM</span>
+          <span class="chip-tag architecture">Architecture</span>
+        </div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-05-shared-mutable-store-http-to-loop">
+      <time datetime="2026-09-05">September 5, 2026</time>
+      <h2>Bridging an HTTP handler into a plain in-process loop</h2>
+      <p><code>orchestrator/injection-queue.ts</code> and <code>stop-registry.ts</code> solve
+      the same small problem two ways: a running planning session is just a <code>for</code>
+      loop in one Node process, with no event emitter, message channel, or polling hook of
+      its own. But the web server's "inject a message" and "stop" endpoints are separate HTTP
+      requests that need to reach into that loop from outside. Rather than restructure the
+      loop into something event-driven, both files use the simplest thing that works: a
+      module-level <code>Map</code>/<code>Set</code> keyed by conversation id. The HTTP
+      handler writes into it (<code>enqueue</code>, <code>requestStop</code>); the loop reads
+      from it at the top of its next turn (<code>drain</code>, <code>isStopRequested</code>).</p>
+      <p>This only works because both sides live in the same process and the loop already
+      polls itself once per turn — there's a natural checkpoint to read the mutable state
+      without needing real concurrency primitives. It would break the moment the server and
+      the loop run in separate processes (a worker, a serverless function, multiple server
+      instances behind a load balancer), at which point the same idea needs an actual queue
+      or pub/sub. Recognizing "same process, already has a loop tick" as the condition that
+      makes a module-level `Map` an acceptable shared-state mechanism — rather than reaching
+      for it out of habit — is the actual transferable lesson.</p>
+      <div class="entry-footer">
+        <div class="tags">
+          <span class="chip-tag node">Node</span>
+          <span class="chip-tag architecture">Architecture</span>
+        </div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-05-round-robin-vs-tool-loop">
+      <time datetime="2026-09-05">September 5, 2026</time>
+      <h2>Why round-robin beats a single agent's tool loop</h2>
+      <p>The committee's <code>runPlanningSession</code> deliberately isn't one LLM in a
+      tool-calling loop deciding when to keep going — it's a plain <code>for</code> loop
+      that hands the <em>full transcript</em> to a different agent (with a different
+      system prompt, sometimes a different model) each turn. Watching the real-estate-app
+      planning session run, this showed its value directly: the Architect proposed full
+      user accounts, and it was a genuinely different agent — the Skeptic — that killed it
+      ("forcing signup before any listing exists creates unnecessary friction"), then a
+      third agent (Devil's Advocate) pushed a wild alternative (blockchain-backed listings)
+      that got explicitly rejected rather than silently absorbed into scope.</p>
+      <p>A single agent looping on its own tool calls tends to talk itself into agreement —
+      each step is generated by the same weights with the same priors, so it rarely
+      surfaces a genuinely different angle on its own. Rotating <em>which model</em> speaks
+      each turn (see <code>rotateProviderOrder</code> in <code>provider-router.ts</code>)
+      compounds this: different providers actually disagree sometimes, which is the whole
+      point of a "skeptic" role having teeth instead of being decorative.</p>
+      <div class="reading">
+        <span class="label">Further reading</span>
+        <ul>
+          <li>Anthropic's engineering post <em>"Building Effective Agents"</em> — the
+          section on multi-agent/"orchestrator-workers" patterns is directly about this
+          tradeoff between a single agent's loop and multiple distinct perspectives.</li>
+        </ul>
+      </div>
+      <div class="entry-footer">
+        <div class="tags">
+          <span class="chip-tag ai">AI/LLM</span>
+          <span class="chip-tag architecture">Architecture</span>
+        </div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-05-sticker-shadow-highlight">
+      <time datetime="2026-09-05">September 5, 2026</time>
+      <h2>The "sticker" look is just an offset shadow + a gloss ellipse</h2>
+      <p>Redoing the docs illustrations to match a hand-drawn/poster reference style
+      came down to two cheap SVG tricks layered on flat shapes, not more detail:</p>
+      <pre><code>&lt;!-- 1. hard offset shadow: same shape, shifted, darker, drawn first --&gt;
+&lt;rect x="16" y="56" width="120" height="100" rx="16" fill="#3f7cb8"/&gt;
+&lt;rect x="10" y="50" width="120" height="100" rx="16" fill="#5b9bd5" stroke="#1a1a1a" stroke-width="5"/&gt;
+
+&lt;!-- 2. gloss highlight: translucent white ellipse, upper-left, drawn last --&gt;
+&lt;rect x="18" y="58" width="44" height="18" rx="9" fill="#fff" opacity="0.28" transform="rotate(-18 40 67)"/&gt;</code></pre>
+      <p>No gradients, no filters, no blur — just z-order and a darker/lighter version of
+      the same fill color. This is the same idea as Material Design's flat "elevation"
+      shadows and the once-trendy "long shadow" flat-design style: depth read from hard
+      color contrast, not soft blur. It's also cheap enough that an LLM can be told the
+      rule (offset-shadow-behind, gloss-highlight-on-top, reuse a small fixed palette) and
+      generate new icons in a consistent style without seeing every prior example — that's
+      exactly what the plan-visualizer agent does now for finalized plans.</p>
+      <div class="reading">
+        <span class="label">Further reading</span>
+        <ul>
+          <li><em>Refactoring UI</em> by Adam Wathan &amp; Steve Schoger — the shadows/depth
+          chapter is the clearest short treatment of "flat but with just enough depth" for
+          people who don't think of themselves as designers.</li>
+        </ul>
+      </div>
+      <div class="entry-footer">
+        <div class="tags">
+          <span class="chip-tag frontend">Frontend</span>
+        </div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+  </div>
+
+  <footer class="note">
+    This journal is regenerated automatically by the <code>learning-digest</code> skill
+    after Claude Code turns in this repo (see
+    <code>.claude/hooks/trigger-auto-updates.sh</code>) — new entries appear only when a
+    session's changes actually teach something.
+  </footer>
+</main>
+<script>
+(function () {
+  var STORAGE_KEY = 'committee-learning-read';
+  var journal = document.getElementById('journal');
+  var indicator = document.getElementById('liveIndicator');
+  var indicatorLabel = document.getElementById('liveIndicatorLabel');
+
+  function loadReadSet() {
+    try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); }
+    catch (e) { return new Set(); }
+  }
+  function saveReadSet(set) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(set))); }
+    catch (e) { /* localStorage unavailable (e.g. private mode) — read state just won't persist */ }
+  }
+
+  // Fallback for any entry missing data-entry-id (shouldn't happen going
+  // forward — learning-digest always sets one — but keeps old/hand-edited
+  // entries working too).
+  function entryId(article) {
+    return article.getAttribute('data-entry-id') ||
+      (article.querySelector('time')?.getAttribute('datetime') || '') + '-' +
+      (article.querySelector('h2')?.textContent || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  }
+
+  function applyReadState() {
+    var readSet = loadReadSet();
+    journal.querySelectorAll('article.entry').forEach(function (article) {
+      var id = entryId(article);
+      var isRead = readSet.has(id);
+      article.classList.toggle('is-read', isRead);
+      var btn = article.querySelector('.read-toggle');
+      if (btn) btn.textContent = isRead ? '✓ Read' : 'Mark as read';
+    });
+  }
+
+  journal.addEventListener('click', function (e) {
+    var btn = e.target.closest('.read-toggle');
+    if (!btn) return;
+    var article = btn.closest('article.entry');
+    if (!article) return;
+    var id = entryId(article);
+    var readSet = loadReadSet();
+    if (readSet.has(id)) readSet.delete(id); else readSet.add(id);
+    saveReadSet(readSet);
+    applyReadState();
+  });
+
+  applyReadState();
+
+  // Live sync: this page is meant to be opened via the committee web server
+  // (`pnpm run cli serve`, then http://localhost:3000/docs/learning.html) so
+  // an already-open tab picks up new entries the learning-digest skill
+  // appends in the background, with no manual refresh. Re-fetching the same
+  // URL only works over http(s) — opened as a plain file:// page, the fetch
+  // below fails immediately and the indicator just says so.
+  var pollFailures = 0;
+  function poll() {
+    fetch(location.href, { cache: 'no-store' })
+      .then(function (res) { return res.text(); })
+      .then(function (html) {
+        pollFailures = 0;
+        indicator.className = 'live-indicator on';
+        indicatorLabel.textContent = 'live — new entries appear automatically';
+        var next = new DOMParser().parseFromString(html, 'text/html');
+        var nextJournal = next.getElementById('journal');
+        if (nextJournal && nextJournal.innerHTML !== journal.innerHTML) {
+          journal.innerHTML = nextJournal.innerHTML;
+          applyReadState();
+        }
+      })
+      .catch(function () {
+        pollFailures++;
+        indicator.className = 'live-indicator off';
+        indicatorLabel.textContent = pollFailures > 1
+          ? 'static file — open via `pnpm run cli serve` for live updates'
+          : 'checking for live updates…';
+      });
+  }
+  poll();
+  setInterval(poll, 4000);
+})();
+</script>
+</body>
+</html>

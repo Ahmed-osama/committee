@@ -10,6 +10,30 @@
       "Read(./**/.next/**)",
       "Read(./**/*.min.js)",
       "Read(./**/*.min.css)"
+    ],
+    "allow": [
+      "Read",
+      "Write(./docs/**)",
+      "Edit(./docs/**)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git status *)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/trigger-auto-updates.sh",
+            "async": true,
+            "timeout": 15,
+            "statusMessage": "Kicking off living-docs + learning-journal update..."
+          }
+        ]
+      }
     ]
   }
 }
