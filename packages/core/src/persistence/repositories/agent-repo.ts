@@ -9,7 +9,7 @@ import { agents } from '../schema.js';
 // both Gemini and Groq within one session, so nothing is hardcoded blind.
 // glm-4-flash specifically is Zhipu's genuinely free-tier model (see
 // pricing.ts) — glm-4.5 is the paid tier, deliberately not used here.
-const SHARED_MODEL_BY_PROVIDER = {
+export const SHARED_MODEL_BY_PROVIDER = {
   groq: 'qwen/qwen3.8-27b',
   gemini: 'gemini-3.6-flash',
   ollama: 'llama3.1:8b',
@@ -161,6 +161,16 @@ export function getOrCreateDefaultReviewer(): AgentConfig {
 
 export function getOrCreateDefaultVisualizer(): AgentConfig {
   return upsert(DEFAULT_VISUALIZER);
+}
+
+/**
+ * Generic upsert for a caller-built AgentConfig — e.g. a custom per-task
+ * roster seat that reuses a default role's provider/model config but swaps
+ * in its own id, name, and system prompt. Unlike the getOrCreateDefault*
+ * wrappers, the caller owns the config; this just persists it.
+ */
+export function getOrCreateAgent(config: AgentConfig): AgentConfig {
+  return upsert(config);
 }
 
 export function getAgent(id: string): AgentConfig | undefined {

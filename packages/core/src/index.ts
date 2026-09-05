@@ -15,6 +15,9 @@ export type { ExecutionTurnResult } from './execution/execute-command.js';
 
 export { generatePlanVisual } from './conversation/generate-plan-visual.js';
 
+export { generateForAgent } from './provider/generate-for-agent.js';
+export type { GenerateForAgentOptions } from './provider/generate-for-agent.js';
+
 export type { ProviderAdapter } from './provider/provider-adapter.js';
 export { ollamaAdapter } from './provider/ollama-adapter.js';
 export { groqAdapter } from './provider/groq-adapter.js';
@@ -47,7 +50,9 @@ export {
   getOrCreateDefaultEstimator,
   getOrCreateDefaultReviewer,
   getOrCreateDefaultVisualizer,
+  getOrCreateAgent,
   getAgent,
+  SHARED_MODEL_BY_PROVIDER,
 } from './persistence/repositories/agent-repo.js';
 export {
   createConversation,

@@ -4,14 +4,14 @@ Real findings from building the second real consumer of `@committee/core`, kept 
 found by trying to build the thing, not invented to fill out a list. `packages/core` was
 not modified to accommodate any of these — that's deliberate (see COM-10/COM-12).
 
-## 1. No public one-shot "call this agent" helper
-`generate-for-agent.ts` (core's internal single-call-with-fallback function) isn't
-exported from `@committee/core`'s index, and `packages/core/package.json`'s `exports` map
-(`"." : "./src/index.ts"` only) hard-blocks any subpath import —
-`ERR_PACKAGE_PATH_NOT_EXPORTED`, not just an unenforced convention. `apps/digest` had to
-manually re-derive the same chain `apps/cli`'s `ping` command already does by hand:
-`selectProvider(agent)` → `PROVIDER_REGISTRY[providerId].model(modelId)` → `generateText`
-from `'ai'` itself. Two apps now duplicate this chain.
+## 1. No public one-shot "call this agent" helper — RESOLVED in COM-12
+`generate-for-agent.ts`'s `generateForAgent` is now exported from `@committee/core`'s
+index. `apps/digest` uses it directly (`src/index.ts`) instead of re-deriving the
+`selectProvider` → `PROVIDER_REGISTRY[...].model(...)` → `generateText` chain by hand —
+and gets its retry-across-providers fallback for free, which the hand-rolled version
+didn't have. One gotcha worth keeping in mind: `generateForAgent` has no separate `system`
+param, so a caller's persona has to be folded into the one `prompt` string (same
+convention `planning-session.ts` already uses internally).
 
 ## 2. Importing anything from core opens committee's own db file
 `persistence/db.ts` opens `packages/core/committee.db` (better-sqlite3, WAL) as an
@@ -21,10 +21,10 @@ consumer using zero persistence functions — `apps/digest` only wanted `selectP
 import. `apps/digest/src/index.ts` sets it to `:memory:` as a workaround; the underlying
 coupling (any import touches a specific file on disk) is still there.
 
-## 3. Provider→model defaults aren't exported
-`SHARED_MODEL_BY_PROVIDER` in `agent-repo.ts` is a private constant. `apps/digest` had to
-redeclare its own copy (`MODEL_BY_PROVIDER` in `src/index.ts`) to get sane default models
-per provider — it can silently drift from committee's own copy with no compiler warning.
+## 3. Provider→model defaults aren't exported — RESOLVED in COM-12
+`SHARED_MODEL_BY_PROVIDER` in `agent-repo.ts` is now exported from `@committee/core`'s
+index. `apps/digest` imports it directly instead of carrying its own copy — no more
+silent-drift risk between the two.
 
 ## 4. `AgentRole` has no generic "single-purpose worker" role
 The union (`planner | architect | skeptic | devils_advocate | estimator | reviewer |
@@ -40,9 +40,9 @@ second Drizzle schema. Not every app needs core's persistence machinery — this
 divergence to note for COM-11, not a gap to fill.
 
 ---
-**For COM-12:** #1 and #3 are the two that look like real, low-risk extraction candidates
-(export `generateForAgent` and `SHARED_MODEL_BY_PROVIDER`, plus loosen or note the reason
-for the `exports` map's subpath block) — both apps already independently reimplement the
-same logic today. #2 is more invasive (would mean deferring `db.ts`'s side effect, e.g.
-lazy-opening on first actual persistence call) and #4 needs a real third data point before
-deciding whether `AgentRole` should grow a generic role. #5 isn't a gap at all.
+**COM-12 outcome:** #1 and #3 extracted as planned — both were genuinely duplicated across
+two apps with no divergence in what they needed. #2 stayed unresolved on purpose: it's more
+invasive (would mean deferring `db.ts`'s module-level side effect to first actual
+persistence call), and per `packages/core/DIVERGENCE.md`, App 2's persistence needs are too
+different in shape from App 1's to justify touching that yet. #4 needs a real third data
+point before `AgentRole` should grow a generic role. #5 isn't a gap at all.
