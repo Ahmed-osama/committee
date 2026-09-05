@@ -25,6 +25,17 @@
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__linear__save_(issue|project)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "packages/skills/hooks/validate-linear-spec.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
