@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import type { ThinkingInfo } from '../conversation/planning-session.js';
 import type { Message } from '../domain/message.js';
 
 /**
@@ -18,6 +19,14 @@ export class EventBus {
   onMessage(handler: (message: Message) => void): () => void {
     this.emitter.on('message', handler);
     return () => this.emitter.off('message', handler);
+  }
+
+  emitThinking(conversationId: string, info: ThinkingInfo): void {
+    this.emitter.emit('thinking', conversationId, info);
+  }
+  onThinking(handler: (conversationId: string, info: ThinkingInfo) => void): () => void {
+    this.emitter.on('thinking', handler);
+    return () => this.emitter.off('thinking', handler);
   }
 
   emitFinalized(conversationId: string): void {
