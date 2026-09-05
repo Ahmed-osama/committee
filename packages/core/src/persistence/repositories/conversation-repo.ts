@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import type { Conversation, ConversationStatus } from '../../domain/conversation.js';
 import { db } from '../db.js';
-import { conversations } from '../schema.js';
+import { conversations, messages } from '../schema.js';
 
 export function createConversation(goal: string): Conversation {
   const now = new Date().toISOString();
@@ -21,4 +21,17 @@ export function updateConversationStatus(id: string, status: ConversationStatus,
   const updated: Conversation = { ...existing, status, linearEpicUrl: linearEpicUrl ?? existing.linearEpicUrl, updatedAt: new Date().toISOString() };
   db.update(conversations).set(updated).where(eq(conversations.id, id)).run();
   return updated;
+}
+
+export function setConversationPlanVisual(id: string, planVisualSvg: string): Conversation {
+  const existing = getConversation(id);
+  if (!existing) throw new Error(`Conversation not found: ${id}`);
+  const updated: Conversation = { ...existing, planVisualSvg, updatedAt: new Date().toISOString() };
+  db.update(conversations).set(updated).where(eq(conversations.id, id)).run();
+  return updated;
+}
+
+export function deleteConversation(id: string): void {
+  db.delete(messages).where(eq(messages.conversationId, id)).run();
+  db.delete(conversations).where(eq(conversations.id, id)).run();
 }

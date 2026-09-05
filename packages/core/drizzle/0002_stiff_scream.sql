@@ -1,0 +1,1 @@
+ALTER TABLE `conversations` ADD `plan_visual_svg` text;

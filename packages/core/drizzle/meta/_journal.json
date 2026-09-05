@@ -8,6 +8,20 @@
       "when": 1788125176083,
       "tag": "0000_right_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788127694808,
+      "tag": "0001_opposite_captain_flint",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788556620778,
+      "tag": "0002_stiff_scream",
+      "breakpoints": true
     }
   ]
 }

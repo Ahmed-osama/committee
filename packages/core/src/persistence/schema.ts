@@ -15,6 +15,7 @@ export const conversations = sqliteTable('conversations', {
   goal: text('goal').notNull(),
   status: text('status').notNull(),
   linearEpicUrl: text('linear_epic_url'),
+  planVisualSvg: text('plan_visual_svg'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -29,6 +30,8 @@ export const messages = sqliteTable('messages', {
   intent: text('intent').notNull(),
   content: text('content').notNull(),
   payload: text('payload', { mode: 'json' }),
+  providerId: text('provider_id'),
+  modelId: text('model_id'),
   turn: integer('turn').notNull(),
   createdAt: text('created_at').notNull(),
 });
