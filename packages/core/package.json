@@ -20,6 +20,7 @@
     "@ai-sdk/google": "^4.0.58",
     "@ai-sdk/groq": "^4.0.35",
     "@ai-sdk/openai-compatible": "^3.0.41",
+    "@ai-sdk/perplexity": "^4.0.39",
     "ai": "^7.0.85",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",

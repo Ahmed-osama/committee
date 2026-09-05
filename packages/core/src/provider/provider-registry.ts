@@ -5,6 +5,8 @@ import { geminiAdapter } from './gemini-adapter.js';
 import { anthropicAdapter } from './anthropic-adapter.js';
 import { deepseekAdapter } from './deepseek-adapter.js';
 import { glmAdapter } from './glm-adapter.js';
+import { openrouterAdapter } from './openrouter-adapter.js';
+import { perplexityAdapter } from './perplexity-adapter.js';
 
 export const PROVIDER_REGISTRY: Record<string, ProviderAdapter> = {
   ollama: ollamaAdapter,
@@ -13,6 +15,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderAdapter> = {
   anthropic: anthropicAdapter,
   deepseek: deepseekAdapter,
   glm: glmAdapter,
+  openrouter: openrouterAdapter,
+  perplexity: perplexityAdapter,
 };
 
 /** Ollama needs no key (it's local); the hosted providers need their API key set. */
@@ -30,6 +34,10 @@ export function isProviderConfigured(providerId: string): boolean {
       return !!process.env.DEEPSEEK_API_KEY;
     case 'glm':
       return !!process.env.GLM_API_KEY;
+    case 'openrouter':
+      return !!process.env.OPENROUTER_API_KEY;
+    case 'perplexity':
+      return !!process.env.PERPLEXITY_API_KEY;
     default:
       return false;
   }
