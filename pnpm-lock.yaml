@@ -8,9 +8,28 @@ importers:
 
   .:
     devDependencies:
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
       turbo:
         specifier: ^2.10.12
         version: 2.10.12
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  apps/_template:
+    dependencies:
+      '@committee/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      '@types/node':
+        specifier: ^26.4.0
+        version: 26.4.0
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
