@@ -22,6 +22,17 @@ const PROVIDER_DEFAULTS: Record<string, RateLimitConfig> = {
   // Perplexity has no free tier — usage is governed by the spend/call
   // ceilings instead, same as anthropic below.
   perplexity: {},
+  // SambaNova's published free tier is a 200K-token/day-per-model cap plus
+  // 20 req/min — this tracker only models request counts, not tokens, so
+  // only the rpm half is represented here. Moot right now regardless: a
+  // live-tested call 2026-09-06 hit PAYMENT_METHOD_REQUIRED on every model
+  // (see sambanova-adapter.ts) — this account can't use SambaNova at all
+  // until a card is on file.
+  sambanova: { rpm: 20 },
+  // NVIDIA NIM applies one global ~40 req/min ceiling per API key shared
+  // across every model. Verified against NVIDIA's docs and third-party
+  // aggregators 2026-09-06, not live-tested.
+  'nvidia-nim': { rpm: 40 },
 };
 
 // Per-model overrides where a provider's tiers differ meaningfully.

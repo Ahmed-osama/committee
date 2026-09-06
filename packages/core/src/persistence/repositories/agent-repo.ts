@@ -21,6 +21,12 @@ export const SHARED_MODEL_BY_PROVIDER = {
   openrouter: 'minimax/minimax-m3:free',
   // Search-augmented, not free — see pricing.ts and perplexity-adapter.ts.
   perplexity: 'sonar',
+  // SambaNova's own docs call this their most battle-tested free-tier
+  // model — see sambanova-adapter.ts. Not yet live-tested (no key held).
+  sambanova: 'Meta-Llama-3.3-70B-Instruct',
+  // One of 100+ models NVIDIA NIM serves for free — see nvidia-nim-adapter.ts.
+  // Not yet live-tested (no key held).
+  'nvidia-nim': 'meta/llama-3.1-70b-instruct',
 };
 
 const DEFAULT_PLANNER: AgentConfig = {

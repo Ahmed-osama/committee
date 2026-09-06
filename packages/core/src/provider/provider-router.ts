@@ -17,7 +17,18 @@ export interface ProviderSelection {
  * primary while still falling back through the rest of this list in
  * strength order.
  */
-export const PROVIDER_STRENGTH_ORDER = ['anthropic', 'gemini', 'groq', 'deepseek', 'glm', 'openrouter', 'perplexity', 'ollama'];
+export const PROVIDER_STRENGTH_ORDER = [
+  'anthropic',
+  'gemini',
+  'groq',
+  'sambanova',
+  'deepseek',
+  'glm',
+  'nvidia-nim',
+  'openrouter',
+  'perplexity',
+  'ollama',
+];
 
 /**
  * Same set, same relative strength order, just rotated to start `offset`

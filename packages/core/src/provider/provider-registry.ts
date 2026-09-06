@@ -7,6 +7,8 @@ import { deepseekAdapter } from './deepseek-adapter.js';
 import { glmAdapter } from './glm-adapter.js';
 import { openrouterAdapter } from './openrouter-adapter.js';
 import { perplexityAdapter } from './perplexity-adapter.js';
+import { sambanovaAdapter } from './sambanova-adapter.js';
+import { nvidiaNimAdapter } from './nvidia-nim-adapter.js';
 
 export const PROVIDER_REGISTRY: Record<string, ProviderAdapter> = {
   ollama: ollamaAdapter,
@@ -17,6 +19,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderAdapter> = {
   glm: glmAdapter,
   openrouter: openrouterAdapter,
   perplexity: perplexityAdapter,
+  sambanova: sambanovaAdapter,
+  'nvidia-nim': nvidiaNimAdapter,
 };
 
 /** Ollama needs no key (it's local); the hosted providers need their API key set. */
@@ -38,6 +42,10 @@ export function isProviderConfigured(providerId: string): boolean {
       return !!process.env.OPENROUTER_API_KEY;
     case 'perplexity':
       return !!process.env.PERPLEXITY_API_KEY;
+    case 'sambanova':
+      return !!process.env.SAMBANOVA_API_KEY;
+    case 'nvidia-nim':
+      return !!process.env.NVIDIA_API_KEY;
     default:
       return false;
   }

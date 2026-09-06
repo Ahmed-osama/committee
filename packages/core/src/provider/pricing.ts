@@ -31,7 +31,10 @@ const FREE: ModelPricing = { inputPerMTok: 0, outputPerMTok: 0 };
 // openrouter is only free here because the default model id ends in
 // `:free` — if you ever point an agent at a paid OpenRouter model, add its
 // real price to PRICING above instead of relying on this blanket $0.
-const FREE_PROVIDERS = new Set(['ollama', 'groq', 'gemini', 'openrouter']);
+// sambanova/nvidia-nim are only free here because committee sticks to their
+// free-tier model catalogs — add real pricing above if a paid model on
+// either is ever used.
+const FREE_PROVIDERS = new Set(['ollama', 'groq', 'gemini', 'openrouter', 'sambanova', 'nvidia-nim']);
 
 export function computeCostUsd(providerId: string, modelId: string, inputTokens: number, outputTokens: number): number {
   const pricing = PRICING[`${providerId}:${modelId}`] ?? (FREE_PROVIDERS.has(providerId) ? FREE : undefined);
