@@ -136,7 +136,11 @@ product's network effects (the deal feed) can do the selling:
 
 ## Status
 
-Not yet scaffolded on disk — planned to live at `apps/web` (+ `packages/db`) once COM-14
-executes. Once scaffolded, give it its own `apps/web/CLAUDE.md` (same pattern as
-`packages/core/CLAUDE.md`) for implementation-level detail; keep this file as the
-product-level spec/audience/roadmap doc and trim any duplication once that split happens.
+COM-14 executed: `apps/web` (Next.js App Router) and `packages/db` (Drizzle, wired for
+Neon's pooled + unpooled connection strings) now exist on disk, with their own
+`CLAUDE.md`s (`apps/web/CLAUDE.md`, `packages/db/CLAUDE.md`) for implementation-level
+detail — this file stays the product-level spec/audience/roadmap doc. No live Neon project
+or Vercel deployment exists yet; `apps/web/README.md` documents the manual provisioning
+steps a human still needs to do. The one generated migration (placeholder `users` table)
+has not been applied to any database. Next up per the roadmap: COM-15 (KYC/OTP vendor
+spike).

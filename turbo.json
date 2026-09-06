@@ -4,6 +4,9 @@
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
     "test": {
       "dependsOn": ["^test"]
     },
