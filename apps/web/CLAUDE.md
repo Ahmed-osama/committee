@@ -260,6 +260,29 @@ smoke test, not just a clean typecheck.
 - Validated the feed query directly against local Postgres: a `'pending'` deal is
   correctly excluded, and a `'closed'` one surfaces with only the anonymized columns.
 
+## Valuation engine (COM-23)
+- `src/lib/valuation/bands.ts` — `areaBandFor`, a pure 100 sqm-wide bucketing
+  function (fixed width for now; adaptive banding is a possible follow-up once
+  there's real deal volume to justify it).
+- `src/lib/valuation/valuation.ts` — `computeValuationCells` (pure, no DB): groups
+  closed-deal samples by `(zone, propertyType, areaBand)` and computes each cell's
+  average EGP/sqm, but **only returns cells that have reached
+  `MIN_DEALS_FOR_VALUATION`** (currently 3, a placeholder pending real volume) — this
+  is where COM-23's "no badge until it's earned, no synthetic seed data ever" rule
+  (docs/projects/groundtruth.md) actually lives, so it's exhaustively unit-tested
+  independent of the DB. A suppressed cell is simply absent from the result, not
+  returned with a "not enough data" placeholder.
+- `src/lib/valuation/engine.ts` — `getValuationCells`/`getValuationForListing` fetch
+  every `'closed'` deal joined to its listing's `zone`/`propertyType`/`areaSqm` via a
+  single `db` read, then hand the raw samples to the pure aggregator. Bucketing
+  happens in-app rather than a SQL `GROUP BY` on a computed expression — GroundTruth's
+  deal volume is small by design (one micro-zone at a time), so this is simpler than
+  pushing the aggregation into SQL.
+- The listing detail page shows the valuation (average EGP/sqm + deal count) directly
+  under the listing's own price when a match exists for that listing's own
+  `(zone, propertyType, areaSqm)` cell; renders nothing at all when suppressed.
+- Validated the underlying join query directly against local Postgres.
+
 ## Conventions specific to this app
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise
   auto-generates/overwrites `AGENTS.md`/`CLAUDE.md` in this directory on every run, which

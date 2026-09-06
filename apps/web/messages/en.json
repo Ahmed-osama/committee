@@ -97,5 +97,10 @@
     "title": "Real closed deals",
     "description": "Every deal here really happened — both the buyer and the seller confirmed it. No names, just zone, type, and price.",
     "empty": "No closed deals yet."
+  },
+  "Valuation": {
+    "label": "Typical price for this area",
+    "perSqm": "EGP/m²",
+    "basedOn": "based on {count} real deals"
   }
 }

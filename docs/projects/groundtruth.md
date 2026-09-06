@@ -234,6 +234,15 @@ rather than the whole `deals` row, so a future identity-bearing column can't lea
 into it by accident. See `apps/web/CLAUDE.md`'s "Public anonymized deal feed"
 section. Next up: COM-23 (valuation engine).
 
+COM-23 done: valuation engine. `computeValuationCells` (pure, exhaustively
+unit-tested) aggregates real `'closed'` deals into `(zone, propertyType, areaBand)`
+cells, but a cell is only ever returned once it has `MIN_DEALS_FOR_VALUATION` (3,
+placeholder) real deals — suppressed entirely (absent, not a placeholder) below that,
+and never seeded with synthetic data, per this doc's anti-collusion mechanism. Shown
+on the listing detail page as an average EGP/sqm figure + deal count when a match
+exists for that listing's own cell. See `apps/web/CLAUDE.md`'s "Valuation engine"
+section. Next up: COM-24 (admin anti-gaming/moderation dashboard).
+
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
 tracked as tripwires per the roadmap table above.

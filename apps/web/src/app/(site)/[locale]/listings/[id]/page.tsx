@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { getSession } from '@/app/api/_lib/session';
 import { getListingWithPhotos } from '@/lib/listings/listings';
 import { getExistingReveal } from '@/lib/payments/credits';
+import { getValuationForListing } from '@/lib/valuation/engine';
 import { makeOfferAction } from './offer-actions';
 import { revealContactAction } from './reveal-actions';
 
@@ -16,6 +17,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const t = await getTranslations('Listings');
   const tn = await getTranslations('Negotiations');
   const tc = await getTranslations('Credits');
+  const tv = await getTranslations('Valuation');
   const result = await getListingWithPhotos(id);
 
   if (!result || result.listing.status !== 'active') {
@@ -27,6 +29,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const isOwner = session != null && session.userId === listing.sellerId;
   const canMakeOffer = session != null && !isOwner;
   const reveal = session != null && !isOwner ? await getExistingReveal(session.userId, listing.id) : null;
+  // Suppressed (null) entirely, not a "not enough data yet" placeholder, until
+  // MIN_DEALS_FOR_VALUATION real dual-confirmed deals exist for this cell — see
+  // lib/valuation/valuation.ts.
+  const valuation = await getValuationForListing(listing.zone, listing.propertyType, listing.areaSqm);
 
   return (
     <main>
@@ -45,6 +51,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         <dt>{t('priceLabel')}</dt>
         <dd>{listing.priceEgp.toLocaleString()} EGP</dd>
       </dl>
+      {valuation ? (
+        <p>
+          {tv('label')}: {valuation.avgPricePerSqmEgp.toLocaleString()} {tv('perSqm')} ({tv('basedOn', { count: valuation.dealCount })})
+        </p>
+      ) : null}
       {photos.length > 0 ? (
         <ul>
           {photos.map((photo) => (
