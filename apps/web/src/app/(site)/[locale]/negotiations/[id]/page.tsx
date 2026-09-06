@@ -1,6 +1,8 @@
 import { getTranslations } from 'next-intl/server';
 import { notFound, redirect } from 'next/navigation';
 import { getSession } from '@/app/api/_lib/session';
+import { Link } from '@/i18n/navigation';
+import { getDealByNegotiationId } from '@/lib/deals/deals';
 import { getNegotiationWithEvents } from '@/lib/negotiations/negotiations';
 import { respondToNegotiationAction } from './actions';
 
@@ -28,6 +30,7 @@ export default async function NegotiationDetailPage({ params }: { params: Promis
   }
 
   const myTurn = negotiation.status === 'open' && ((isBuyer && negotiation.turn === 'buyer') || (isSeller && negotiation.turn === 'seller'));
+  const deal = negotiation.status === 'accepted' ? await getDealByNegotiationId(negotiation.id) : null;
 
   return (
     <main>
@@ -70,6 +73,11 @@ export default async function NegotiationDetailPage({ params }: { params: Promis
         </>
       ) : negotiation.status === 'open' ? (
         <p>{t('waitingOnOtherParty')}</p>
+      ) : null}
+      {deal ? (
+        <p>
+          <Link href={`/deals/${deal.id}`}>{t('viewDeal')}</Link>
+        </p>
       ) : null}
     </main>
   );

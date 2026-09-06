@@ -163,6 +163,36 @@ smoke test, not just a clean typecheck.
   clients still can't reach a local Postgres (same limitation noted under COM-18/17),
   so the app-level dev-server smoke test only covers routes that don't touch the DB.
 
+## Dual-confirmed deal closure (COM-20)
+- `src/lib/deals/confirmation.ts` — `applyConfirmation`, a pure merge function (same
+  split as COM-19's state-machine.ts/negotiations.ts): given the current
+  buyer/seller-confirmed timestamps and who just confirmed, returns the next state,
+  flipping to `'closed'` only once BOTH are set. Idempotent — confirming again (by the
+  same party, or after the deal is already closed) is a no-op, per root CLAUDE.md's
+  "promise once, receipt once" rule (no nagging re-confirmation error). Exhaustively
+  unit-tested in its sibling `.test.ts`.
+- `src/lib/deals/deals.ts` — `confirmDeal` wraps that pure function with
+  `pooledDb.transaction(...)` + `.for('update')`, for the same lost-update reason as
+  COM-19's offer transitions: two near-simultaneous confirmations must not both read
+  "not yet closed" and race past each other.
+- A `deals` row is created automatically, in `'pending'` status, the moment a
+  negotiation (COM-19) is accepted — see `negotiations.ts`'s `respondToNegotiation`,
+  same transaction as the acceptance itself so there's no window where an accepted
+  negotiation has no corresponding deal. `deals.negotiationId` is unique — a
+  negotiation can be accepted (and thus produce a deal) at most once.
+- Routes/pages: `POST /api/deals/[id]/confirm`; `(site)/[locale]/deals/[id]` shows
+  agreed price, status, and a confirm button (hidden once the viewer has already
+  confirmed). The negotiation thread page links to its deal once accepted.
+- Known gap: a closed deal doesn't currently change the listing's own `status` (stays
+  `'active'`) or the negotiation's own row — nothing in COM-20's scope required it, and
+  auto-archiving is a reasonable follow-up, not attempted here to avoid guessing at
+  behavior nothing asked for.
+- Validated the same way as COM-19: migration + full confirm-both-sides SQL sequence
+  run directly against local Postgres, including confirming the
+  `deals_negotiation_id_unique` constraint actually rejects a second deal for the same
+  negotiation. The Neon-driver-needs-a-real-endpoint limitation still applies to
+  exercising `pooledDb`/`db` themselves through a live route.
+
 ## Conventions specific to this app
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise
   auto-generates/overwrites `AGENTS.md`/`CLAUDE.md` in this directory on every run, which

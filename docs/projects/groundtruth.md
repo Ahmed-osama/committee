@@ -204,6 +204,16 @@ validated (migration + full state-machine SQL sequence run directly against loca
 Postgres — the Neon-driver-needs-a-real-endpoint limitation from COM-17/18 still
 applies to `pooledDb`/`db` themselves). Next up: COM-20 (dual-confirmed deal closure).
 
+COM-20 done: dual-confirmed deal closure. A `deals` row (`'pending'` status, unique
+`negotiationId`) is created automatically the moment a negotiation (COM-19) is
+accepted, in the same transaction as the acceptance. `apps/web/src/lib/deals/
+confirmation.ts` is a pure, exhaustively unit-tested merge function (deal flips to
+`'closed'` only once both `buyerConfirmedAt`/`sellerConfirmedAt` are set, idempotent
+on repeat confirmation); `deals.ts` wraps it with `pooledDb.transaction(...)` +
+`.for('update')`, same lost-update reasoning as COM-19. See `apps/web/CLAUDE.md`'s
+"Dual-confirmed deal closure" section, including the known gap that a closed deal
+doesn't yet auto-archive its listing. Next up: COM-21 (pay-to-reveal paywall).
+
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
 tracked as tripwires per the roadmap table above.

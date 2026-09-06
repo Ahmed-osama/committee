@@ -64,6 +64,20 @@
       "counter": "Counter-offer",
       "accept": "Accepted",
       "reject": "Rejected"
-    }
+    },
+    "viewDeal": "View deal"
+  },
+  "Deals": {
+    "title": "Deal",
+    "agreedPriceLabel": "Agreed price",
+    "statusLabel": "Status",
+    "status": {
+      "pending": "Waiting for both sides to confirm",
+      "closed": "Closed"
+    },
+    "otherPartyConfirmed": "The other party has confirmed this deal.",
+    "otherPartyPending": "Waiting for the other party to confirm.",
+    "youConfirmed": "You've confirmed this deal.",
+    "confirm": "Confirm this deal happened"
   }
 }

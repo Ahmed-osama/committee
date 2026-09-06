@@ -1,4 +1,4 @@
-import { listings, negotiationEvents, negotiations, pooledDb } from '@committee/db';
+import { deals, listings, negotiationEvents, negotiations, pooledDb } from '@committee/db';
 import { and, eq } from 'drizzle-orm';
 import {
   applyNegotiationAction,
@@ -118,6 +118,19 @@ export async function respondToNegotiation(
       type: action,
       priceEgp: action === 'reject' ? null : next.currentPriceEgp,
     });
+
+    // COM-20: an accepted negotiation immediately gets a 'pending' deal row, in the
+    // same transaction — closing still requires both parties' independent
+    // confirmation (see lib/deals/deals.ts), this just starts that clock.
+    if (next.status === 'accepted') {
+      await tx.insert(deals).values({
+        negotiationId,
+        listingId: negotiation.listingId,
+        buyerId: negotiation.buyerId,
+        sellerId: negotiation.sellerId,
+        agreedPriceEgp: next.currentPriceEgp,
+      });
+    }
 
     return updated;
   });

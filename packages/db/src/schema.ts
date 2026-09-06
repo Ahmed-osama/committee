@@ -125,3 +125,34 @@ export const negotiationEvents = pgTable('negotiation_events', {
   priceEgp: integer('price_egp'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const dealStatusEnum = pgEnum('deal_status', ['pending', 'closed']);
+
+// COM-20's anti-collusion core: a deal only becomes 'closed' once BOTH
+// buyerConfirmedAt and sellerConfirmedAt are set, independently, by each party —
+// neither side's unilateral claim counts (docs/projects/groundtruth.md). Created
+// automatically the moment a negotiation (COM-19) is accepted, in 'pending' status;
+// `negotiationId` is unique because a negotiation can be accepted at most once. Only
+// a 'closed' deal is eligible for COM-22's public feed / COM-23's valuation engine.
+export const deals = pgTable('deals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  negotiationId: uuid('negotiation_id')
+    .notNull()
+    .unique()
+    .references(() => negotiations.id, { onDelete: 'cascade' }),
+  listingId: uuid('listing_id')
+    .notNull()
+    .references(() => listings.id, { onDelete: 'cascade' }),
+  buyerId: uuid('buyer_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  sellerId: uuid('seller_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  agreedPriceEgp: integer('agreed_price_egp').notNull(),
+  status: dealStatusEnum('status').notNull().default('pending'),
+  buyerConfirmedAt: timestamp('buyer_confirmed_at', { withTimezone: true }),
+  sellerConfirmedAt: timestamp('seller_confirmed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
