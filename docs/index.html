@@ -160,11 +160,13 @@
       <li><a href="#overview"><span class="swatch" style="background:var(--coral)"></span>Overview &amp; direction</a></li>
       <li><a href="#domain"><span class="swatch" style="background:var(--purple)"></span>Domain model</a></li>
       <li><a href="#planning"><span class="swatch" style="background:var(--blue)"></span>Planning session</a></li>
+      <li><a href="#visualizer"><span class="swatch" style="background:var(--coral)"></span>Plan visualizer</a></li>
       <li><a href="#providers"><span class="swatch" style="background:var(--green)"></span>Provider routing</a></li>
       <li><a href="#persistence"><span class="swatch" style="background:var(--cream)"></span>Persistence</a></li>
       <li><a href="#orchestrator"><span class="swatch" style="background:var(--yellow)"></span>Orchestrator plumbing</a></li>
       <li><a href="#execution"><span class="swatch" style="background:var(--ink)"></span>Execution turns</a></li>
       <li><a href="#frontends"><span class="swatch" style="background:var(--blue)"></span>Front doors: CLI &amp; web</a></li>
+      <li><a href="#platform"><span class="swatch" style="background:var(--green)"></span>Platform: apps on shared core</a></li>
     </ul>
     <p class="tagline" style="margin-top:22px;border-top:1px dashed #e7e3db;padding-top:16px">
       <a href="learning.html" style="color:inherit;font-weight:700">📚 Learning journal &rarr;</a>
@@ -295,6 +297,26 @@
       <code>agree</code> — not just gone quiet — and has raised at least
       2 real challenges first. That floor exists because on the first real
       run, the plan finalized before the Skeptic had said anything at all.</p>
+      <p>Two later fixes target the opposite failure — a debate that never
+      converges. Past 75% of the turn budget the loop enters a "closing
+      phase": prompts push agents to converge instead of opening new
+      threads, and once the Skeptic is eligible to agree, the finalizer's
+      <code>finalize_plan</code> call (and, late in the closing phase, the
+      Skeptic's <code>agree</code> call) is <em>forced</em> via
+      <code>toolChoice</code> rather than left to the model's discretion —
+      agents were observed writing "finalize_plan" as prose instead of
+      actually calling the tool, stalling until the budget ran out. If the
+      budget still runs out with no agreement, the finalizer gets one last
+      forced call to commit to a best-effort plan from whatever was
+      discussed, rather than reporting no plan at all.</p>
+      <p>The loop also takes a human mid-debate: the web viewer's pause
+      button blocks the loop at the top of its next turn
+      (<code>isPaused</code>/<code>onPausedChange</code>), and sending a
+      message resumes it automatically. A finalized conversation isn't a
+      dead end either — "reopen &amp; regenerate" seeds a fresh session with
+      the old transcript as <code>initialTranscript</code>, continuing turn
+      numbers from <code>startTurn</code>, so new human feedback can reopen
+      and re-finalize the same conversation instead of starting over.</p>
       <div class="art">
         <svg viewBox="0 0 460 260" width="460" height="260">
           <rect width="460" height="260" fill="#ffffff"/>
@@ -334,15 +356,72 @@
       </div>
     </section>
 
+    <section id="visualizer">
+      <div class="chip">PLAN VISUALIZER</div>
+      <p>Once a plan is finalized, <code>generatePlanVisual</code>
+      (<code>conversation/generate-plan-visual.ts</code>) makes one extra
+      call — deliberately outside the round-robin debate — asking a
+      dedicated Visualizer agent for a single <code>&lt;svg&gt;</code>
+      diagram of the plan's tasks in order. The result is stored via
+      <code>setConversationPlanVisual</code> and shown by both the web
+      viewer and the <code>committee_plan</code> MCP tool's reply.</p>
+      <div class="art">
+        <svg viewBox="0 0 400 220" width="400" height="220">
+          <rect width="400" height="220" fill="#ffffff"/>
+
+          <!-- plan document -->
+          <rect x="44" y="54" width="110" height="130" rx="10" fill="var(--cream-dk)" transform="translate(4,4)"/>
+          <rect x="40" y="50" width="110" height="130" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="4"/>
+          <rect x="48" y="58" width="40" height="14" rx="7" fill="#ffffff" opacity="0.35"/>
+          <circle cx="60" cy="100" r="8" fill="#ffffff" stroke="var(--ink)" stroke-width="3"/>
+          <text x="60" y="104" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="10" fill="var(--ink)">1</text>
+          <line x1="76" y1="100" x2="130" y2="100" stroke="var(--ink)" stroke-width="3"/>
+          <circle cx="60" cy="126" r="8" fill="#ffffff" stroke="var(--ink)" stroke-width="3"/>
+          <text x="60" y="130" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="10" fill="var(--ink)">2</text>
+          <line x1="76" y1="126" x2="130" y2="126" stroke="var(--ink)" stroke-width="3"/>
+          <circle cx="60" cy="152" r="8" fill="#ffffff" stroke="var(--ink)" stroke-width="3"/>
+          <text x="60" y="156" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="10" fill="var(--ink)">3</text>
+          <line x1="76" y1="152" x2="130" y2="152" stroke="var(--ink)" stroke-width="3"/>
+          <text x="95" y="204" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="13" fill="var(--ink)">PLAN</text>
+
+          <!-- sparkle -->
+          <g stroke="var(--ink)" stroke-width="4" stroke-linecap="round">
+            <line x1="196" y1="98" x2="196" y2="120"/>
+            <line x1="185" y1="109" x2="207" y2="109"/>
+          </g>
+          <path d="M170 118 H222" stroke="var(--ink)" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M222 118 L208 110 M222 118 L208 126" stroke="var(--ink)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- framed svg output -->
+          <rect x="254" y="44" width="130" height="140" rx="12" fill="var(--blue-dk)" transform="translate(4,4)"/>
+          <rect x="250" y="40" width="130" height="140" rx="12" fill="var(--blue)" stroke="var(--ink)" stroke-width="5"/>
+          <rect x="264" y="54" width="102" height="88" rx="4" fill="#ffffff" stroke="var(--ink)" stroke-width="4"/>
+          <circle cx="335" cy="72" r="10" fill="var(--yellow)" stroke="var(--ink)" stroke-width="3"/>
+          <path d="M264 138 L296 100 L316 122 L340 88 L366 138 Z" fill="var(--coral)" stroke="var(--ink)" stroke-width="4" stroke-linejoin="round"/>
+          <ellipse cx="270" cy="62" rx="14" ry="7" fill="#ffffff" opacity="0.35" transform="rotate(-20 270 62)"/>
+          <text x="315" y="200" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="13" fill="var(--ink)">SVG DIAGRAM</text>
+        </svg>
+      </div>
+    </section>
+
     <section id="providers">
       <div class="chip">PROVIDER ROUTING</div>
       <p>All roles share one canonical strength ordering
       (<code>PROVIDER_STRENGTH_ORDER</code>: anthropic → gemini → groq →
-      deepseek → glm → openrouter → ollama). <code>selectProvider</code> walks
-      it and returns the first entry that's configured, not rate-limited, and
-      under the daily call/spend ceilings. <code>rotateProviderOrder</code>
-      rotates the same list per role so the committee spreads across
-      providers instead of every role fighting over the single strongest one.</p>
+      sambanova → deepseek → glm → nvidia-nim → openrouter → perplexity →
+      ollama). <code>selectProvider</code> walks it and returns the first
+      entry that's configured, not rate-limited, and under the daily
+      call/spend ceilings. <code>rotateProviderOrder</code> rotates the same
+      list per role so the committee spreads across providers instead of
+      every role fighting over the single strongest one.</p>
+      <p>SambaNova and NVIDIA NIM are the newest additions, both scouted for
+      their free-tier model catalogs — <code>nvidia-nim</code>
+      shares one ~40 req/min ceiling across every model on the key;
+      <code>sambanova</code>'s is 20 req/min per model. Neither has been
+      live-tested end-to-end yet, and a real call against SambaNova on
+      2026-09-06 hit <code>PAYMENT_METHOD_REQUIRED</code> on every model —
+      it stays in the strength order for when that's resolved, but can't
+      actually serve a turn today.</p>
       <div class="art">
         <svg viewBox="0 0 340 260" width="340" height="260">
           <rect width="340" height="260" fill="#ffffff"/>
@@ -498,43 +577,140 @@
     </section>
 
     <section id="frontends">
-      <div class="chip">FRONT DOORS: CLI &amp; WEB</div>
-      <p>Two thin front ends share the same <code>@committee/core</code>
+      <div class="chip">FRONT DOORS: CLI, WEB &amp; MCP</div>
+      <p>Three thin front ends share the same <code>@committee/core</code>
       engine. <code>apps/cli</code> (<code>committee plan</code>,
       <code>transcript</code>, <code>serve</code>, ...) drives it from a
       terminal. <code>server/web-server.ts</code> drives the same
       <code>runPlanningSession</code> from an HTTP API with an SSE stream, so
-      you can watch a conversation live, inject messages, or stop it from a
-      browser at <code>localhost:3000</code>.</p>
+      you can watch a conversation live, inject messages, pause/resume it, or
+      stop it from a browser at <code>localhost:3000</code> — each
+      conversation also gets a deep link (<code>/c/:id</code>) and a short
+      generated sidebar title (<code>generateConversationTitle</code>, one
+      out-of-band call fired right after creation) instead of the raw goal
+      text. <code>apps/mcp-server</code>
+      exposes the same loop as a <code>committee_plan</code> MCP tool, so
+      another AI agent — not just a human — can delegate a planning task
+      here without spending its own model usage on the debate. It also
+      exposes <code>committee_resolve_linear_target</code>, a small
+      keyword-config-driven lookup (<code>linear-target-rules.ts</code>)
+      that says which Linear team/labels/project a spec belongs under —
+      without calling Linear itself, since the calling session already has
+      the official Linear MCP server connected for that.</p>
       <div class="art">
-        <svg viewBox="0 0 400 200" width="400" height="200">
-          <rect width="400" height="200" fill="#ffffff"/>
+        <svg viewBox="0 0 480 220" width="480" height="220">
+          <rect width="480" height="220" fill="#ffffff"/>
           <!-- terminal window -->
-          <rect x="24" y="34" width="130" height="94" rx="12" fill="var(--purple-dk)" transform="translate(4,4)"/>
-          <rect x="20" y="30" width="130" height="94" rx="12" fill="var(--purple)" stroke="var(--ink)" stroke-width="5"/>
-          <rect x="30" y="50" width="110" height="60" rx="5" fill="#0e0e0e"/>
-          <text x="38" y="80" font-family="monospace" font-weight="bold" font-size="15" fill="var(--green)">&gt;_</text>
-          <text x="85" y="158" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="13" fill="var(--ink)">CLI</text>
+          <rect x="14" y="24" width="120" height="86" rx="12" fill="var(--purple-dk)" transform="translate(4,4)"/>
+          <rect x="10" y="20" width="120" height="86" rx="12" fill="var(--purple)" stroke="var(--ink)" stroke-width="5"/>
+          <rect x="20" y="38" width="100" height="52" rx="5" fill="#0e0e0e"/>
+          <text x="28" y="66" font-family="monospace" font-weight="bold" font-size="14" fill="var(--green)">&gt;_</text>
+          <text x="70" y="130" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="12" fill="var(--ink)">CLI</text>
 
           <!-- browser window -->
-          <rect x="234" y="34" width="130" height="94" rx="12" fill="var(--blue-dk)" transform="translate(4,4)"/>
-          <rect x="230" y="30" width="130" height="94" rx="12" fill="var(--blue)" stroke="var(--ink)" stroke-width="5"/>
-          <rect x="230" y="30" width="130" height="22" rx="12" fill="var(--cream)" stroke="var(--ink)" stroke-width="4"/>
-          <circle cx="242" cy="41" r="3.5" fill="var(--coral)"/>
-          <circle cx="253" cy="41" r="3.5" fill="var(--yellow)"/>
-          <circle cx="264" cy="41" r="3.5" fill="var(--green)"/>
-          <line x1="245" y1="72" x2="345" y2="72" stroke="var(--ink)" stroke-width="3"/>
-          <line x1="245" y1="87" x2="320" y2="87" stroke="var(--ink)" stroke-width="3"/>
-          <line x1="245" y1="102" x2="330" y2="102" stroke="var(--ink)" stroke-width="3"/>
-          <text x="295" y="158" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="13" fill="var(--ink)">WEB VIEWER</text>
+          <rect x="180" y="24" width="120" height="86" rx="12" fill="var(--blue-dk)" transform="translate(4,4)"/>
+          <rect x="176" y="20" width="120" height="86" rx="12" fill="var(--blue)" stroke="var(--ink)" stroke-width="5"/>
+          <rect x="176" y="20" width="120" height="20" rx="12" fill="var(--cream)" stroke="var(--ink)" stroke-width="4"/>
+          <circle cx="187" cy="30" r="3" fill="var(--coral)"/>
+          <circle cx="197" cy="30" r="3" fill="var(--yellow)"/>
+          <circle cx="207" cy="30" r="3" fill="var(--green)"/>
+          <line x1="190" y1="58" x2="280" y2="58" stroke="var(--ink)" stroke-width="3"/>
+          <line x1="190" y1="72" x2="260" y2="72" stroke="var(--ink)" stroke-width="3"/>
+          <line x1="190" y1="86" x2="270" y2="86" stroke="var(--ink)" stroke-width="3"/>
+          <text x="236" y="130" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="12" fill="var(--ink)">WEB VIEWER</text>
+
+          <!-- mcp: another agent, chat bubble -->
+          <rect x="346" y="24" width="120" height="86" rx="12" fill="var(--coral-dk)" transform="translate(4,4)"/>
+          <rect x="342" y="20" width="120" height="86" rx="12" fill="var(--coral)" stroke="var(--ink)" stroke-width="5"/>
+          <rect x="352" y="32" width="52" height="34" rx="10" fill="#ffffff" stroke="var(--ink)" stroke-width="3"/>
+          <path d="M362 66 v10 l12 -10 z" fill="#ffffff" stroke="var(--ink)" stroke-width="3"/>
+          <circle cx="368" cy="49" r="3" fill="var(--ink)"/>
+          <circle cx="380" cy="49" r="3" fill="var(--ink)"/>
+          <circle cx="392" cy="49" r="3" fill="var(--ink)"/>
+          <text x="402" y="130" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="12" fill="var(--ink)">MCP TOOL</text>
 
           <!-- shared core -->
-          <circle cx="197" cy="77" r="28" fill="var(--yellow-dk)" transform="translate(3,4)"/>
-          <circle cx="194" cy="73" r="28" fill="var(--yellow)" stroke="var(--ink)" stroke-width="5"/>
-          <ellipse cx="185" cy="63" rx="9" ry="5" fill="#ffffff" opacity="0.4"/>
-          <text x="194" y="78" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="11" fill="var(--ink)">CORE</text>
-          <path d="M154 74 H164" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"/>
-          <path d="M224 74 H234" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="240" cy="172" r="30" fill="var(--yellow-dk)" transform="translate(3,4)"/>
+          <circle cx="237" cy="168" r="30" fill="var(--yellow)" stroke="var(--ink)" stroke-width="5"/>
+          <ellipse cx="227" cy="157" rx="10" ry="5" fill="#ffffff" opacity="0.4"/>
+          <text x="237" y="173" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="11" fill="var(--ink)">CORE</text>
+          <path d="M70 110 V150 Q70 160 130 168" stroke="var(--ink)" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M236 110 V138" stroke="var(--ink)" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M402 110 V150 Q402 160 344 168" stroke="var(--ink)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </section>
+
+    <section id="platform">
+      <div class="chip">PLATFORM: APPS ON SHARED CORE</div>
+      <p><code>apps/_template</code> is a baseline scaffold (package.json/tsconfig
+      wiring already globbed into the workspace) to copy when bootstrapping a new
+      app, instead of re-deriving that plumbing each time. <code>apps/digest</code>
+      is the first app built from it — a second real consumer of
+      <code>@committee/core</code>, deliberately kept separate from committee's own
+      relational schema. It keeps its own flat JSON append-log
+      (<code>apps/digest/src/history.ts</code>) instead.</p>
+      <p><code>packages/core/DIVERGENCE.md</code> records why: committee's session
+      memory and provider routing are shaped by a multi-turn debate with real state
+      transitions, while digest's is "one topic in, one call, one output" — genuinely
+      different needs, not a gap to paper over. Only the pieces both apps
+      independently re-derived by hand — <code>generateForAgent</code> and
+      <code>SHARED_MODEL_BY_PROVIDER</code> — got pulled into core's exports; a
+      shared <code>SessionStore</code> or <code>LLMClient</code> stays premature
+      until a third app's needs land somewhere between these two.</p>
+      <div class="art">
+        <svg viewBox="0 0 480 250" width="480" height="250">
+          <rect width="480" height="250" fill="#ffffff"/>
+
+          <!-- core circle -->
+          <circle cx="243" cy="46" r="30" fill="var(--yellow-dk)"/>
+          <circle cx="240" cy="42" r="30" fill="var(--yellow)" stroke="var(--ink)" stroke-width="5"/>
+          <ellipse cx="229" cy="30" rx="10" ry="5" fill="#ffffff" opacity="0.4"/>
+          <text x="240" y="47" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="11" fill="var(--ink)">CORE</text>
+
+          <path d="M228 68 Q160 96 120 118" stroke="var(--ink)" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M120 118 L128 104 M120 118 L136 112" stroke="var(--ink)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M252 68 Q320 96 360 118" stroke="var(--ink)" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M360 118 L344 112 M360 118 L352 104" stroke="var(--ink)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- committee app box -->
+          <rect x="34" y="122" width="150" height="50" rx="12" fill="var(--blue-dk)" transform="translate(4,4)"/>
+          <rect x="30" y="118" width="150" height="50" rx="12" fill="var(--blue)" stroke="var(--ink)" stroke-width="5"/>
+          <rect x="38" y="124" width="46" height="14" rx="7" fill="#ffffff" opacity="0.3"/>
+          <text x="105" y="150" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="13" fill="var(--ink)">COMMITTEE</text>
+
+          <!-- digest app box -->
+          <rect x="300" y="122" width="150" height="50" rx="12" fill="var(--green-dk)" transform="translate(4,4)"/>
+          <rect x="296" y="118" width="150" height="50" rx="12" fill="var(--green)" stroke="var(--ink)" stroke-width="5"/>
+          <rect x="304" y="124" width="46" height="14" rx="7" fill="#ffffff" opacity="0.3"/>
+          <text x="371" y="150" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="13" fill="var(--ink)">DIGEST</text>
+
+          <!-- relational db cylinder under committee -->
+          <g transform="translate(80,196)">
+            <path d="M4 8 V32 A25 8 0 0 0 54 32 V8" fill="var(--cream-dk)"/>
+            <ellipse cx="29" cy="8" rx="25" ry="8" fill="var(--cream-dk)"/>
+            <path d="M0 6 V30 A25 8 0 0 0 50 30 V6" fill="var(--cream)" stroke="var(--ink)" stroke-width="4"/>
+            <ellipse cx="25" cy="6" rx="25" ry="8" fill="var(--cream)" stroke="var(--ink)" stroke-width="4"/>
+          </g>
+          <text x="105" y="248" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="11" fill="var(--ink)">RELATIONAL DB</text>
+
+          <!-- flat json log under digest -->
+          <rect x="349" y="200" width="46" height="36" rx="5" fill="var(--cream-dk)" transform="translate(3,3)"/>
+          <rect x="346" y="197" width="46" height="36" rx="5" fill="var(--cream)" stroke="var(--ink)" stroke-width="4"/>
+          <line x1="353" y1="207" x2="385" y2="207" stroke="var(--ink)" stroke-width="2.5"/>
+          <line x1="353" y1="215" x2="385" y2="215" stroke="var(--ink)" stroke-width="2.5"/>
+          <line x1="353" y1="223" x2="378" y2="223" stroke="var(--ink)" stroke-width="2.5"/>
+          <text x="371" y="248" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="11" fill="var(--ink)">FLAT JSON LOG</text>
+
+          <!-- template stamp feeding digest -->
+          <g transform="translate(430,60)">
+            <rect x="-26" y="-22" width="52" height="42" rx="8" fill="var(--purple-dk)" transform="translate(3,3)"/>
+            <rect x="-28" y="-24" width="52" height="42" rx="8" fill="var(--purple)" stroke="var(--ink)" stroke-width="4"/>
+            <path d="M-28 -24 L-8 -4 L-8 -24 Z" fill="#ffffff" opacity="0.35"/>
+          </g>
+          <text x="430" y="94" text-anchor="middle" font-family="'Baloo 2',Arial" font-weight="700" font-size="11" fill="var(--ink)">_TEMPLATE</text>
+          <path d="M420 70 Q400 90 378 110" stroke="var(--ink)" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M378 110 L382 96 M378 110 L392 106" stroke="var(--ink)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
     </section>

@@ -17,11 +17,41 @@ libraries consumed via workspace imports (e.g. `@committee/core`).
 - Keep responses short; skip trailing "here's what I did" summaries unless asked.
 - Explain non-obvious choices briefly as we go, since the point here is learning.
 - After finishing a task that changes structure, conventions, or direction, update the
-  relevant CLAUDE.md (this file, or a package-level one) in the same turn — don't let
-  docs drift from code. See `packages/core/CLAUDE.md` for that package's subsystem map.
+  relevant doc in the same turn — don't let docs drift from code. See "Docs map" below
+  for where each kind of detail lives.
+- Whenever a `committee_plan` session finalizes a new mini-startup/initiative (one getting
+  its own Linear project), add it to "Mini-startups built here" below *and* create its
+  `docs/projects/<name>.md` in the same turn — a fresh session anywhere in this repo needs
+  to discover what exists without re-deriving it from Linear or chat history.
 - When a moment in the work matches an existing Claude Code skill, subagent, or other
   ecosystem tool (not yet used in this session), point it out — briefly, once — rather
   than defaulting to a manual approach.
+
+## Docs map
+Single-file CLAUDE.md doesn't scale here — detail lives in the file scoped to it:
+- This file — repo-wide overview, commands, working style, Linear conventions, direction.
+- `docs/CODING_STYLE.md` — cross-repo TypeScript/testing/structure conventions.
+- `packages/*/CLAUDE.md`, `apps/*/CLAUDE.md` — that package's subsystem map and
+  package-specific conventions (e.g. `packages/core/CLAUDE.md`).
+- `docs/projects/<name>.md` — one file per mini-startup: product spec, audience, stack,
+  status. See "Mini-startups built here" for the index.
+
+## Linear conventions
+- One Epic per initiative/mini-project/app; each finalized plan's tasks become issues
+  filed under that Epic, not loose top-level issues.
+
+## Mini-startups built here
+This repo is also a launchpad: each entry below is a distinct product initiative planned
+via `committee_plan` and tracked as its own Linear project (see Linear conventions above).
+Full spec/audience/stack detail lives in `docs/projects/<name>.md` — this list is just the
+index so a fresh session can discover what exists without re-deriving it from Linear.
+
+- **GroundTruth** — real-estate marketplace for a small Nile Delta town, Egypt. Linear
+  project: `GroundTruth`. Full spec: `docs/projects/groundtruth.md`.
+
+**When a new mini-startup's plan is finalized**, add an entry here and its
+`docs/projects/<name>.md` before considering that planning round done — this list is the
+load-bearing source of "what exists," not a courtesy.
 
 ## Direction (important context, not just history)
 Earlier phases built a bespoke task-tracking/execution pipeline (SQLite task state

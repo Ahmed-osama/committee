@@ -189,6 +189,264 @@
 
   <div id="journal">
 
+    <article class="entry" data-entry-id="2026-09-06-force-tool-choice-at-agreement">
+      <time datetime="2026-09-06">September 6, 2026</time>
+      <h2>When a model narrates a tool call instead of making one</h2>
+      <p>The Planner/Architect/Skeptic debate in
+      <code>packages/core/src/conversation/planning-session.ts</code> was stalling: once the
+      skeptic had genuinely agreed, the finalizer's only sanctioned move was to call
+      <code>finalize_plan</code>, and the closing-phase prompt told the skeptic to call
+      <code>agree</code> rather than raise new objections — but agents kept writing the literal
+      words <code>finalize_plan</code> or "I agree" as plain text instead of invoking the actual
+      tool. Offering a tool doesn't make the model use it; by default (<code>toolChoice:
+      'auto'</code> in the Vercel AI SDK's <code>generateText</code>) the model is still free to
+      answer in prose, and once it's talked itself into treating the decision as already made,
+      it has little incentive to also emit a structured call.</p>
+      <p>The fix, threaded through as a new <code>toolChoice</code> option on
+      <code>generateForAgent</code> (<code>packages/core/src/provider/generate-for-agent.ts</code>),
+      is to stop asking and start requiring: at the exact points where the caller already knows
+      the tool call is the only valid next action, pass <code>{ type: 'tool', toolName:
+      'finalize_plan' }</code> instead of leaving the tool set open-ended. This is a general
+      rule for any tool-using agent loop — reserve free-form <code>auto</code> choice for turns
+      where the model genuinely has options, and force a specific tool the moment your own code
+      already knows there's exactly one legitimate action left. Leaving it to "the model should
+      infer it's supposed to call this now" is exactly the gap that produces silent, budget-
+      burning stalls.</p>
+      <div class="entry-footer">
+        <div class="tags"><span class="chip-tag ai">AI/LLM</span><span class="chip-tag architecture">architecture</span></div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-06-openai-compatible-adapter-shim">
+      <time datetime="2026-09-06">September 6, 2026</time>
+      <h2>Adding a new LLM provider without writing a new SDK client</h2>
+      <p>Adding NVIDIA NIM and SambaNova to the provider roster
+      (<code>nvidia-nim-adapter.ts</code>, <code>sambanova-adapter.ts</code>) took about ten
+      lines each, not because those providers are simple, but because neither needed its own
+      SDK. Both — like <code>glm-adapter.ts</code>, <code>openrouter-adapter.ts</code>, and
+      <code>ollama-adapter.ts</code> before them — just point the Vercel AI SDK's
+      <code>createOpenAICompatible</code> at a base URL and an API key:</p>
+      <pre><code>const nvidiaNim = createOpenAICompatible({
+  name: 'nvidia-nim',
+  baseURL: 'https://integrate.api.nvidia.com/v1',
+  apiKey: process.env.NVIDIA_API_KEY,
+});</code></pre>
+      <p>This works because most hosted-inference providers converged on the same wire format
+      OpenAI's chat-completions API popularized — same request shape, same streaming
+      event format — even when the model behind it is Llama or DeepSeek, not GPT anything.
+      <code>createOpenAICompatible</code> is a generic client for that de-facto protocol, so
+      "add a provider" becomes a config object instead of a bespoke integration, and every
+      adapter in <code>provider-registry.ts</code> ends up satisfying the same
+      <code>ProviderAdapter</code> interface (<code>id</code> + <code>model(modelId)</code>)
+      regardless of which vendor is actually behind it — the rest of the codebase never has
+      to know the difference.</p>
+      <p>The trade-off worth noting for next time: "wired" and "verified" are different claims.
+      The nvidia adapter's own comment is explicit that its base URL and rate limits came from
+      docs, not a live call — worth flagging in code whenever a new integration is added by
+      research rather than by testing against a real key.</p>
+      <div class="entry-footer">
+        <div class="tags"><span class="chip-tag ai">AI/LLM</span><span class="chip-tag node">node</span></div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-06-stale-agreement-window-scoping">
+      <time datetime="2026-09-06">September 6, 2026</time>
+      <h2>Reopening a finished loop: scope "did we already agree" to the new round</h2>
+      <p>The web viewer's "regenerate" flow reopens a finalized planning conversation
+      with fresh human feedback by calling <code>runPlanningSession</code> again, seeded
+      with the old transcript via new <code>initialTranscript</code>/<code>startTurn</code>
+      options in <code>packages/core/src/conversation/planning-session.ts</code>. That
+      seeding created a subtle bug: the skeptic's earlier <code>agree</code> message from
+      *before* the human's new feedback was still sitting in the transcript, and
+      <code>hasSkepticAgreed</code>/<code>countSkepticChallenges</code> would see it and let
+      the finalizer close the loop again immediately — with zero new debate on the thing
+      the human just asked to change.</p>
+      <p>The fix is a one-line filter: <code>const currentRound = transcript.filter((m) =&gt;
+      m.turn &gt;= startTurn)</code>, and every agreement/challenge check reads from
+      <code>currentRound</code> instead of the full transcript. The general shape — "carry
+      history forward for context, but scope the *decision* state to what's happened since
+      this resumption" — comes up anywhere a stateful loop gets restarted with prior
+      history attached: a chat session resumed with old messages, a retry loop that reuses
+      a previous attempt's log. The seeded history should inform the prompt; it shouldn't
+      count as evidence toward exit conditions that are supposed to reflect fresh work.</p>
+      <div class="entry-footer">
+        <div class="tags"><span class="chip-tag ai">AI/LLM</span><span class="chip-tag architecture">architecture</span></div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-06-cooperative-pause-via-polled-flag">
+      <time datetime="2026-09-06">September 6, 2026</time>
+      <h2>Pausing an async loop: poll a flag, don't block on a promise</h2>
+      <p><code>runPlanningSession</code> in
+      <code>packages/core/src/conversation/planning-session.ts</code> needed a "pause" that a
+      human can trigger mid-debate and later resume. The implementation isn't a
+      <code>Promise</code> the pause handler resolves — it's a plain module-level
+      registry (<code>packages/core/src/orchestrator/pause-registry.ts</code>) holding a
+      set of paused conversation IDs, checked at the top of each turn:</p>
+      <pre><code>if (isPaused?.(conversationId)) {
+  onPausedChange?.(true);
+  while (isPaused?.(conversationId)) {
+    if (isStopRequested?.(conversationId)) return { finalized: false, turnsUsed: turn, stopped: true };
+    await sleep(500);
+  }
+  onPausedChange?.(false);
+}</code></pre>
+      <p>This is a deliberate trade: a promise-based pause (resolve a stored "resume" promise
+      from the HTTP handler) would react instantly and use zero CPU while waiting, but it
+      couples the request handler to a live in-memory reference for that specific run — awkward
+      once you also want <code>stop</code> to interrupt the same wait, and fragile across process
+      boundaries. Polling a flag every 500ms is slightly wasteful and adds up to half a second of
+      latency on resume, but it composes trivially: <code>stop</code> and <code>pause</code> are
+      just two independent registries checked from the same loop, and either one can be flipped
+      from any HTTP request with no shared promise plumbing. For a human-in-the-loop control this
+      coarse (pause/resume happen on the order of seconds, not milliseconds), the simplicity is
+      worth more than the theoretical responsiveness a promise would buy.</p>
+      <div class="entry-footer">
+        <div class="tags"><span class="chip-tag ai">AI/LLM</span><span class="chip-tag node">node</span><span class="chip-tag architecture">architecture</span></div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-06-forced-finalization-over-empty-result">
+      <time datetime="2026-09-06">September 6, 2026</time>
+      <h2>When a loop times out, force a degraded result instead of returning nothing</h2>
+      <p><code>packages/core/src/conversation/planning-session.ts</code> runs a fixed
+      turn budget (<code>maxTurns</code>) for the Planner/Architect/Skeptic debate.
+      Originally, if the skeptic never agreed before the budget ran out, the whole
+      conversation just returned <code>{ finalized: false }</code> — a potentially
+      long, costly LLM conversation producing literally nothing usable. The fix adds
+      two layers: a <code>CLOSING_PHASE_FRACTION</code> (75%) past which the skeptic
+      is told to agree unless there's a genuinely critical objection, and — if the
+      loop still exhausts every turn with no plan — one forced extra call that
+      instructs the finalizer agent to call <code>finalize_plan</code> immediately
+      from whatever was discussed, no further debate allowed.</p>
+      <p>The general pattern is worth naming: for any agent loop with a hard turn or
+      time budget, decide up front what happens at the boundary. The naive default —
+      let the budget run out and report failure — throws away all the (expensive)
+      partial progress. Nudging behavior as the deadline approaches (the closing-phase
+      prompt change) is cheap and often enough on its own; keeping a forced fallback
+      call as a last resort means the *worst* case is "an imperfect plan from a real
+      transcript," not "nothing, after burning the whole budget." The same shape shows
+      up in agentic coding tools that force a summary/wrap-up turn when they're about
+      to hit a context or step limit.</p>
+      <div class="entry-footer">
+        <div class="tags"><span class="chip-tag ai">AI/LLM</span><span class="chip-tag architecture">architecture</span></div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-06-deterministic-guardrail-vs-prompting">
+      <time datetime="2026-09-06">September 6, 2026</time>
+      <h2>A shell script is a stronger guardrail than a prompt instruction</h2>
+      <p>COM-9 added <code>packages/skills/hooks/validate-linear-spec.sh</code>, a
+      <code>PreToolUse</code> hook wired in front of <code>mcp__linear__save_issue</code> and
+      <code>mcp__linear__save_project</code>. It could have been "tell the agent in its system
+      prompt not to file issues with an empty title" — but a system prompt is a request the
+      model can still misread or skip under pressure from a long context. The hook instead runs
+      as real code, outside the model's control: it reads the tool call's JSON off stdin, checks
+      whether it's a create (no <code>id</code> field — updates like a bare status change are
+      left alone) versus a genuinely empty <code>title</code>/<code>name</code>, and if so exits
+      with code <code>2</code> and a JSON <code>permissionDecision: "deny"</code> payload that
+      blocks the call outright before it ever reaches Linear.</p>
+      <p>The general lesson: for a narrow, mechanically-checkable invariant ("this field must be
+      non-empty"), a deterministic pre-tool hook is strictly more reliable than instructing the
+      model to self-police, because it can't be rationalized away mid-conversation. Save prompt
+      instructions for judgment calls — hooks for anything you can express as a plain boolean
+      check on the tool call itself.</p>
+      <div class="entry-footer">
+        <div class="tags"><span class="chip-tag ai">AI/LLM</span><span class="chip-tag architecture">Architecture</span></div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-06-friction-log-before-abstraction">
+      <time datetime="2026-09-06">September 6, 2026</time>
+      <h2>Let a friction log decide what gets extracted, not a guess</h2>
+      <p>Bootstrapping <code>apps/digest</code> as a second app on top of <code>packages/core</code>
+      (COM-10) started from a guess: the two apps' session storage and provider routing looked
+      similar enough to share an <code>LLMClient</code>/<code>SessionStore</code> abstraction.
+      Instead of building that abstraction speculatively, the work logged real friction as it
+      happened (<code>apps/digest/FRICTION.md</code>), then wrote down what actually diverged
+      between the two apps' session and routing needs (<code>packages/core/DIVERGENCE.md</code>,
+      COM-11) before touching shared code.</p>
+      <p>The friction log turned out to name only two things as genuinely duplicated with zero
+      divergence: a provider-fallback function and a shared model-by-provider map. Those got
+      extracted into <code>packages/core</code> (COM-12) — <code>generateForAgent</code> now
+      retries across an agent's configured provider list on failure, marking each one down via
+      <code>markProviderDown</code> so the next attempt steers around it, and <code>apps/digest</code>
+      picked up that retry behavior for free just by calling the shared function instead of its
+      own hand-rolled <code>selectProvider → PROVIDER_REGISTRY → generateText</code> chain. The
+      bigger session/store abstraction the original task assumed was needed never got built —
+      <code>DIVERGENCE.md</code> showed the two apps' needs aren't actually shaped alike yet.
+      This is the "rule of three" instinct made procedural: write down where the duplication
+      really is and isn't before reaching for a shared abstraction, so the abstraction boundary
+      follows evidence instead of a first impression.</p>
+      <div class="reading">
+        <span class="label">Further reading</span>
+        <ul><li>Sandi Metz, "The Wrong Abstraction" — on the cost of extracting shared code too early and how to back out of it</li></ul>
+      </div>
+      <div class="entry-footer">
+        <div class="tags"><span class="chip-tag architecture">Architecture</span><span class="chip-tag ai">AI/LLM</span></div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-06-decouple-role-from-persona">
+      <time datetime="2026-09-06">September 6, 2026</time>
+      <h2>Separating "what it does" from "what it's called"</h2>
+      <p>The <code>committee_plan</code> MCP tool (<code>apps/mcp-server/src/index.ts</code>)
+      used to seat a fixed six agents. The custom-roster addition lets a caller invent any
+      seat titles and personas it wants ("Migration Skeptic", "Data Modeler") while still
+      requiring each seat to declare one of a closed set of <code>role</code> values —
+      <code>planner</code>, <code>architect</code>, <code>skeptic</code>, etc. That
+      <code>role</code> is the only thing the round-robin loop actually reads to decide
+      mechanics: which seats speak as challengers, and which single seat (a
+      <code>skeptic</code>) gets veto power over finalizing the plan. <code>name</code> and
+      <code>persona</code> are pure presentation, free-text, never inspected by the loop.</p>
+      <p>This is the same split as an enum-tagged union in code: a small closed set drives
+      control flow, and an open string field carries whatever detail doesn't affect behavior.
+      It's what makes free-form LLM-generated input (the calling agent invents seat names on
+      the fly) safe to mix with code that needs to make hard decisions — the loop never has to
+      parse or trust the creative part, only the tagged part.</p>
+      <pre><code>role: z.enum(['planner', 'architect', 'skeptic', ...]) // drives finalization/challenger logic
+name: z.string()     // cosmetic only
+persona: z.string()  // cosmetic only, becomes the system prompt</code></pre>
+      <div class="entry-footer">
+        <div class="tags"><span class="chip-tag ai">AI/LLM</span><span class="chip-tag architecture">Architecture</span></div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
+    <article class="entry" data-entry-id="2026-09-06-llm-as-svg-generator">
+      <time datetime="2026-09-06">September 6, 2026</time>
+      <h2>Getting a diagram out of an LLM without a rendering library</h2>
+      <p><code>generate-plan-visual.ts</code> asks the model to respond with "exactly one
+      <code>&lt;svg&gt;...&lt;/svg&gt;</code> element and nothing else," then pulls it out
+      with a plain regex (<code>/&lt;svg&gt;[\s\S]*?&lt;\/svg&gt;/i</code>) and drops it
+      straight into the page. No diagramming library, no layout engine, no JSON-then-render
+      step — SVG is just text, and a model that's seen enough of it can write the markup
+      directly, coordinates and all.</p>
+      <p>The trick that makes this reliable enough to ship is narrowing the request until the
+      output is nearly deterministic: a fixed viewBox range, a closed palette of six hex
+      colors, an exact shadow-offset/gloss recipe, and "if there are 3 tasks, draw 3 steps,
+      not more." Loose instructions ("draw a nice diagram") invite an under-specified,
+      inconsistent result; a tight visual spec turns free-text generation into something you
+      can safely regex out and trust to render. The regex match is also the fallback path —
+      if the model wraps the SVG in prose or markdown fences anyway, extraction still works
+      because it only looks for the tag pair, not an exact-full-string match.</p>
+      <p>This is also why the visualizer is deliberately outside the round-robin planning
+      loop (see <code>packages/core/CLAUDE.md</code>): it's a one-shot job handed a
+      finalized, immutable input, so there's nothing to debate and no state to carry between
+      turns — just one prompt in, one SVG out.</p>
+      <div class="entry-footer">
+        <div class="tags"><span class="chip-tag ai">AI/LLM</span><span class="chip-tag frontend">Frontend</span></div>
+        <button class="read-toggle" type="button">Mark as read</button>
+      </div>
+    </article>
+
     <article class="entry" data-entry-id="2026-09-05-proactive-and-reactive-rate-limiting">
       <time datetime="2026-09-05">September 5, 2026</time>
       <h2>Two layers of provider fallback: quota tracking vs. failure cooldown</h2>
