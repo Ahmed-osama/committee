@@ -2,8 +2,11 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
   better-sqlite3: true
   esbuild: true
+  unrs-resolver: true
 minimumReleaseAgeExclude:
   - '@ai-sdk/gateway@4.0.69'
   - '@ai-sdk/openai-compatible@3.0.41'

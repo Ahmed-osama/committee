@@ -1,0 +1,106 @@
+{
+  "Metadata": {
+    "title": "GroundTruth",
+    "description": "Direct seller/buyer real-estate negotiation with a game-resistant valuation signal."
+  },
+  "HomePage": {
+    "title": "GroundTruth",
+    "description": "Scaffolding in progress — see docs/projects/groundtruth.md.",
+    "browseListings": "Browse listings",
+    "viewDealFeed": "See real closed deals"
+  },
+  "Login": {
+    "title": "Sign in",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "+201001234567",
+    "sendCode": "Send code",
+    "codeLabel": "Code",
+    "verifyCode": "Verify",
+    "sendError": "Couldn't send the code. Check the number and try again.",
+    "verifyError": "Incorrect code. Try again.",
+    "success": "Signed in."
+  },
+  "Listings": {
+    "browseTitle": "Listings",
+    "empty": "No listings yet.",
+    "newListing": "New listing",
+    "priceLabel": "Price",
+    "areaLabel": "Area",
+    "zoneLabel": "Zone",
+    "typeLabel": "Type",
+    "type": {
+      "apartment": "Apartment",
+      "house": "House",
+      "land": "Land",
+      "commercial": "Commercial"
+    },
+    "detailNotFound": "This listing isn't available.",
+    "backToListings": "Back to listings",
+    "createTitle": "New listing",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "submit": "Publish listing",
+    "signInToCreate": "Sign in to publish a listing.",
+    "kycRequired": "Your ID verification must be approved before you can publish a listing."
+  },
+  "Negotiations": {
+    "offerPriceLabel": "Your offer (EGP)",
+    "makeOffer": "Make an offer",
+    "threadTitle": "Negotiation",
+    "statusLabel": "Status",
+    "status": {
+      "open": "Open",
+      "accepted": "Accepted",
+      "rejected": "Rejected"
+    },
+    "currentPriceLabel": "Current price",
+    "counterPriceLabel": "Your counter-offer (EGP)",
+    "accept": "Accept",
+    "reject": "Reject",
+    "counter": "Send counter-offer",
+    "waitingOnOtherParty": "Waiting for the other party to respond.",
+    "event": {
+      "offer": "Offer made",
+      "counter": "Counter-offer",
+      "accept": "Accepted",
+      "reject": "Rejected"
+    },
+    "viewDeal": "View deal"
+  },
+  "Deals": {
+    "title": "Deal",
+    "agreedPriceLabel": "Agreed price",
+    "statusLabel": "Status",
+    "status": {
+      "pending": "Waiting for both sides to confirm",
+      "closed": "Closed"
+    },
+    "otherPartyConfirmed": "The other party has confirmed this deal.",
+    "otherPartyPending": "Waiting for the other party to confirm.",
+    "youConfirmed": "You've confirmed this deal.",
+    "confirm": "Confirm this deal happened"
+  },
+  "Credits": {
+    "title": "Credits",
+    "signInRequired": "Sign in to buy or spend credits.",
+    "balanceLabel": "Your balance",
+    "creditsUnit": "credits",
+    "buy": "Buy",
+    "mockCheckoutTitle": "Payment (test mode)",
+    "mockCheckoutNotice": "This is a stand-in for the real payment page — no real payment provider is connected yet.",
+    "simulateSuccess": "Simulate successful payment",
+    "simulateFailure": "Simulate failed payment",
+    "revealContact": "Reveal seller's phone number",
+    "sellerPhoneLabel": "Seller's phone number"
+  },
+  "DealFeed": {
+    "title": "Real closed deals",
+    "description": "Every deal here really happened — both the buyer and the seller confirmed it. No names, just zone, type, and price.",
+    "empty": "No closed deals yet."
+  },
+  "Valuation": {
+    "label": "Typical price for this area",
+    "perSqm": "EGP/m²",
+    "basedOn": "based on {count} real deals"
+  }
+}

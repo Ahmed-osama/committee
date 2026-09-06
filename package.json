@@ -6,6 +6,7 @@
   "packageManager": "pnpm@11.24.0",
   "scripts": {
     "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
     "test": "turbo run test",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",

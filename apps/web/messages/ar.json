@@ -1,0 +1,106 @@
+{
+  "Metadata": {
+    "title": "GroundTruth",
+    "description": "تواصل مباشر بين البائع والمشتري لبيع وشراء العقارات، بسعر عادل مبني على صفقات حقيقية."
+  },
+  "HomePage": {
+    "title": "GroundTruth",
+    "description": "الموقع لسه قيد التجهيز.",
+    "browseListings": "تصفح الإعلانات",
+    "viewDealFeed": "شوف الصفقات الحقيقية اللي تمت"
+  },
+  "Login": {
+    "title": "تسجيل الدخول",
+    "phoneLabel": "رقم الموبايل",
+    "phonePlaceholder": "+201001234567",
+    "sendCode": "إرسال الكود",
+    "codeLabel": "الكود",
+    "verifyCode": "تأكيد",
+    "sendError": "تعذر إرسال الكود. تأكد من الرقم وحاول مرة أخرى.",
+    "verifyError": "الكود غير صحيح. حاول مرة أخرى.",
+    "success": "تم تسجيل الدخول."
+  },
+  "Listings": {
+    "browseTitle": "الإعلانات",
+    "empty": "لا توجد إعلانات حتى الآن.",
+    "newListing": "إعلان جديد",
+    "priceLabel": "السعر",
+    "areaLabel": "المساحة",
+    "zoneLabel": "المنطقة",
+    "typeLabel": "النوع",
+    "type": {
+      "apartment": "شقة",
+      "house": "بيت",
+      "land": "أرض",
+      "commercial": "تجاري"
+    },
+    "detailNotFound": "هذا الإعلان غير متاح.",
+    "backToListings": "الرجوع إلى الإعلانات",
+    "createTitle": "إعلان جديد",
+    "titleLabel": "العنوان",
+    "descriptionLabel": "الوصف",
+    "submit": "نشر الإعلان",
+    "signInToCreate": "سجّل دخولك لنشر إعلان.",
+    "kycRequired": "لازم يتم قبول توثيق هويتك الأول قبل ما تقدر تنشر إعلان."
+  },
+  "Negotiations": {
+    "offerPriceLabel": "عرضك (بالجنيه)",
+    "makeOffer": "قدّم عرض سعر",
+    "threadTitle": "التفاوض على السعر",
+    "statusLabel": "الحالة",
+    "status": {
+      "open": "مفتوح",
+      "accepted": "تمت الموافقة",
+      "rejected": "تم الرفض"
+    },
+    "currentPriceLabel": "السعر الحالي",
+    "counterPriceLabel": "عرضك المقابل (بالجنيه)",
+    "accept": "موافقة",
+    "reject": "رفض",
+    "counter": "إرسال عرض مقابل",
+    "waitingOnOtherParty": "في انتظار رد الطرف الآخر.",
+    "event": {
+      "offer": "تم تقديم عرض",
+      "counter": "عرض مقابل",
+      "accept": "تمت الموافقة",
+      "reject": "تم الرفض"
+    },
+    "viewDeal": "عرض الصفقة"
+  },
+  "Deals": {
+    "title": "الصفقة",
+    "agreedPriceLabel": "السعر المتفق عليه",
+    "statusLabel": "الحالة",
+    "status": {
+      "pending": "في انتظار تأكيد الطرفين",
+      "closed": "تمت الصفقة"
+    },
+    "otherPartyConfirmed": "الطرف الآخر أكّد هذه الصفقة.",
+    "otherPartyPending": "في انتظار تأكيد الطرف الآخر.",
+    "youConfirmed": "لقد أكّدت هذه الصفقة.",
+    "confirm": "أكّد أن هذه الصفقة تمت فعلاً"
+  },
+  "Credits": {
+    "title": "الرصيد",
+    "signInRequired": "سجّل دخولك لشراء أو استخدام الرصيد.",
+    "balanceLabel": "رصيدك الحالي",
+    "creditsUnit": "نقطة",
+    "buy": "شراء",
+    "mockCheckoutTitle": "الدفع (وضع تجريبي)",
+    "mockCheckoutNotice": "هذه صفحة تجريبية بديلة لصفحة الدفع الحقيقية — لم يتم ربط وسيلة دفع حقيقية بعد.",
+    "simulateSuccess": "محاكاة دفع ناجح",
+    "simulateFailure": "محاكاة دفع فاشل",
+    "revealContact": "إظهار رقم موبايل البائع",
+    "sellerPhoneLabel": "رقم موبايل البائع"
+  },
+  "DealFeed": {
+    "title": "صفقات حقيقية تمت بالفعل",
+    "description": "كل صفقة هنا حصلت فعلاً، وأكّدها البائع والمشتري. بدون أسماء، فقط المنطقة والنوع والسعر.",
+    "empty": "لا توجد صفقات حتى الآن."
+  },
+  "Valuation": {
+    "label": "السعر المعتاد في هذه المنطقة",
+    "perSqm": "جنيه للمتر",
+    "basedOn": "بناءً على {count} صفقة حقيقية"
+  }
+}

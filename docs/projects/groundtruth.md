@@ -136,7 +136,131 @@ product's network effects (the deal feed) can do the selling:
 
 ## Status
 
-Not yet scaffolded on disk — planned to live at `apps/web` (+ `packages/db`) once COM-14
-executes. Once scaffolded, give it its own `apps/web/CLAUDE.md` (same pattern as
-`packages/core/CLAUDE.md`) for implementation-level detail; keep this file as the
-product-level spec/audience/roadmap doc and trim any duplication once that split happens.
+COM-14 executed: `apps/web` (Next.js App Router) and `packages/db` (Drizzle, wired for
+Neon's pooled + unpooled connection strings) now exist on disk, with their own
+`CLAUDE.md`s (`apps/web/CLAUDE.md`, `packages/db/CLAUDE.md`) for implementation-level
+detail — this file stays the product-level spec/audience/roadmap doc. No live Neon project
+or Vercel deployment exists yet; `apps/web/README.md` documents the manual provisioning
+steps a human still needs to do. The one generated migration (placeholder `users` table)
+has not been applied to any database.
+
+COM-15 done: vendor spike written up at `docs/projects/groundtruth-vendor-spike.md`
+(Sumsub lead for KYC, Twilio Verify lead for OTP — both unconfirmed research
+recommendations, founder decides before any contract/API keys). `packages/auth-providers`
+defines the vendor-agnostic `KycProvider`/`OtpProvider` interfaces plus mock
+implementations that COM-18 codes against regardless of which vendor is finally chosen.
+
+COM-16 done: `next-intl` wired into `apps/web` — locale routing under
+`src/app/(site)/[locale]/` (`ar` default/RTL, `en` for dev), `src/proxy.ts` for locale
+detection (Next 16's `middleware.ts` → `proxy.ts` rename), `dir="rtl"` driven off an
+`RTL_LOCALES` set. `messages/en.json` is the source of truth; `messages/ar.json` mirrors
+it verbatim as a placeholder pending COM-25's real translation pass. The `(site)` route
+group exists specifically so COM-24's `/admin` can be a sibling unlocalized root layout
+later — see `apps/web/CLAUDE.md`.
+
+COM-18 done: phone OTP registration/login (`/api/auth/otp/{send,verify}`), KYC doc/selfie
+submission (`/api/kyc/submit`, stored on local disk pending a real object-storage vendor —
+verification itself is stubbed via `@committee/auth-providers`'s mock, not a real KYC
+vendor call), a signed session cookie, admin role gating (`role` column +
+`requireAdminSession()`), and data-deletion rights (`/api/account/delete`, hard-deletes a
+user via `pooledDb.transaction(...)` — the first real use of the pooled-client split
+`packages/db/CLAUDE.md` documents). Schema + migration validated against a local Postgres
+instance (insert/cascade-delete exercised directly); the Neon serverless HTTP driver
+itself still needs a real Neon endpoint or local proxy to fully exercise, consistent with
+what `apps/web/README.md` already notes about local-Postgres fallback. See
+`apps/web/CLAUDE.md`'s "Auth, KYC & compliance" section for the full breakdown.
+
+COM-17 done: listing creation (`POST /api/listings` + `(site)/[locale]/listings/new`,
+gated on an authenticated seller with an **approved** KYC verification, not merely
+submitted), photo upload (public bucket, `/api/listings/[id]/photos`), and public
+browse/detail pages (`(site)/[locale]/listings`, `.../listings/[id]` — no login
+required). A minimal client-side login page (`(site)/[locale]/login`, two-step OTP)
+was also added since it's needed to exercise the create flow at all. Found and fixed a
+real bundler bug along the way: neither Turbopack nor webpack remapped
+`packages/db`/`packages/auth-providers`'s NodeNext-style `./foo.js` internal imports to
+their real `.ts` files by default, so any route touching those packages 500'd with
+"Module not found" — invisible to `pnpm run typecheck`/`lint` (CI doesn't run `next
+build`), only caught by actually booting the dev server. Fixed via `transpilePackages`
++ a webpack `resolve.extensionAlias`, with `apps/web` now pinned to `next dev/build
+--webpack` since Turbopack (Next 16's default) has no equivalent option and was also
+nondeterministic while debugging this — see `apps/web/CLAUDE.md`'s "Bundler quirk"
+section, which flags this as a recurring-risk area for any future issue that adds a new
+`@committee/db`/`@committee/auth-providers` import path. Schema/migration validated
+against local Postgres directly; full request-level exercise against a real Postgres
+still blocked on the same Neon-serverless-driver-needs-a-real-endpoint limitation noted
+under COM-18. Next up per the roadmap: COM-19 (offer/negotiation state machine).
+
+COM-19 done: structured offer/counter/accept/reject negotiation state machine.
+`apps/web/src/lib/negotiations/state-machine.ts` is a pure, exhaustively unit-tested
+transition function; `negotiations.ts` wraps it with `pooledDb.transaction(...)` +
+`.for('update')` row locks (per `packages/db/CLAUDE.md`'s note that offer state
+transitions need the pooled client, same as COM-20). One open negotiation per
+(listing, buyer) pair. Buyers only need to be authenticated, not KYC-approved (that
+gate stays specific to sellers per COM-17/18). New routes/pages: `POST
+/api/listings/[id]/negotiations`, `POST /api/negotiations/[id]/respond`, and a
+`(site)/[locale]/negotiations/[id]` thread page. See `apps/web/CLAUDE.md`'s
+"Negotiation state machine" section for the full breakdown, including how this was
+validated (migration + full state-machine SQL sequence run directly against local
+Postgres — the Neon-driver-needs-a-real-endpoint limitation from COM-17/18 still
+applies to `pooledDb`/`db` themselves). Next up: COM-20 (dual-confirmed deal closure).
+
+COM-20 done: dual-confirmed deal closure. A `deals` row (`'pending'` status, unique
+`negotiationId`) is created automatically the moment a negotiation (COM-19) is
+accepted, in the same transaction as the acceptance. `apps/web/src/lib/deals/
+confirmation.ts` is a pure, exhaustively unit-tested merge function (deal flips to
+`'closed'` only once both `buyerConfirmedAt`/`sellerConfirmedAt` are set, idempotent
+on repeat confirmation); `deals.ts` wraps it with `pooledDb.transaction(...)` +
+`.for('update')`, same lost-update reasoning as COM-19. See `apps/web/CLAUDE.md`'s
+"Dual-confirmed deal closure" section, including the known gap that a closed deal
+doesn't yet auto-archive its listing. Next up: COM-21 (pay-to-reveal paywall).
+
+COM-21 done: pay-to-reveal paywall + credit ledger. New `packages/payment-providers`
+(mirrors `auth-providers`'s vendor-agnostic-interface pattern) defines
+`PaymentProvider` + `MockPaymentProvider` for Paymob (confirmed vendor, no real
+account/credentials yet). Credits are a `SUM`-of-ledger balance, never a mutable
+counter; a purchase only grants credits once a webhook reports success, guarded
+against double-crediting on webhook retries via `pooledDb.transaction(...)` +
+`.for('update')`. Revealing a listing's seller phone costs a flat
+`REVEAL_COST_CREDITS`, guarded against double-charging by a unique
+`(listingId, buyerId)` index. A dev-only mock checkout page stands in for Paymob's
+real hosted checkout and must be deleted once a real adapter lands — see
+`apps/web/CLAUDE.md`'s "Pay-to-reveal paywall & credit ledger" section for the full
+breakdown. Next up: COM-22 (public anonymized deal feed).
+
+COM-22 done: public anonymized deal feed. `(site)/[locale]/deals` lists real
+`'closed'` deals (COM-20) — zone/type/price only, no session required, linked from
+the homepage. `lib/deals/feed.ts` explicitly selects only those anonymized columns
+rather than the whole `deals` row, so a future identity-bearing column can't leak
+into it by accident. See `apps/web/CLAUDE.md`'s "Public anonymized deal feed"
+section. Next up: COM-23 (valuation engine).
+
+COM-23 done: valuation engine. `computeValuationCells` (pure, exhaustively
+unit-tested) aggregates real `'closed'` deals into `(zone, propertyType, areaBand)`
+cells, but a cell is only ever returned once it has `MIN_DEALS_FOR_VALUATION` (3,
+placeholder) real deals — suppressed entirely (absent, not a placeholder) below that,
+and never seeded with synthetic data, per this doc's anti-collusion mechanism. Shown
+on the listing detail page as an average EGP/sqm figure + deal count when a match
+exists for that listing's own cell. See `apps/web/CLAUDE.md`'s "Valuation engine"
+section. Next up: COM-24 (admin anti-gaming/moderation dashboard).
+
+COM-24 done: admin anti-gaming & moderation dashboard. `(admin)/admin` is a second,
+sibling root layout to `(site)/[locale]`, deliberately unlocalized (no `next-intl`),
+gated via COM-18's `requireAdminSession()`. Shows three read-only review lists:
+rejected KYC submissions, buyers with unusually high negotiation activity and zero
+closed deals, and closed deals priced far from their COM-23 valuation cell — all pure
+heuristics (`lib/admin/flags.ts`, unit-tested) over existing data, no new tracking/
+schema. Nothing here takes action automatically; see `apps/web/CLAUDE.md`'s "Admin
+anti-gaming & moderation dashboard" section. Next up: COM-25 (Arabic UI copy pass —
+this dashboard is explicitly excluded from it).
+
+COM-25 done: Arabic UI copy pass. `messages/ar.json` replaced its COM-16-era
+English-mirrored placeholder with real Arabic translations for every key introduced
+through COM-22 (`(admin)/admin`'s COM-24 dashboard excluded — it isn't localized at
+all). Wording favors plain, everyday words over formal/jargon Arabic, per this doc's
+audience constraint. Key-structure parity between `en.json`/`ar.json` verified with a
+deep key-diff, not just eyeballing. See `apps/web/CLAUDE.md`'s "Arabic UI copy pass"
+section.
+
+COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
+liability review, splitting dual-confirmation into its own service) — not attempted here,
+tracked as tripwires per the roadmap table above.

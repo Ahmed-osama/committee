@@ -7,3 +7,5 @@ build/
 committee.db
 committee.db-*
 .turbo/
+.next/
+apps/web/.data/
