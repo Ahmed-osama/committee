@@ -243,6 +243,23 @@ smoke test, not just a clean typecheck.
   hit the DB still hit the same Neon-driver-needs-a-real-endpoint limitation as
   COM-17-20.
 
+## Public anonymized deal feed (COM-22)
+- `src/lib/deals/feed.ts` — `listPublicDealFeed`, a single `db` read (no auth, no
+  transaction needed) joining `deals`/`listings`, filtered to `status = 'closed'` and
+  selecting only `zone`/`propertyType`/`agreedPriceEgp`/`closedAt` — deliberately an
+  explicit column list rather than `select().from(deals)`, so a future column added to
+  `deals` (e.g. anything identity-bearing) can't leak into the public feed by accident.
+- `closedAt` is `deals.updatedAt` reused, not a dedicated column — a deal's only
+  writes are its two confirmations (COM-20), and the second one is the exact instant
+  `status` flips to `'closed'`, with nothing written after. If `deals` ever grows
+  another post-close write path, `feed.ts`'s comment flags that this needs its own
+  column.
+- `(site)/[locale]/deals` (a `page.tsx` sibling of the existing auth-gated
+  `deals/[id]/page.tsx`) — no session check, consistent with COM-22's "checkable
+  before a visitor signs up" requirement. Linked from the homepage.
+- Validated the feed query directly against local Postgres: a `'pending'` deal is
+  correctly excluded, and a `'closed'` one surfaces with only the anonymized columns.
+
 ## Conventions specific to this app
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise
   auto-generates/overwrites `AGENTS.md`/`CLAUDE.md` in this directory on every run, which

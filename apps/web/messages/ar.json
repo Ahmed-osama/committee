@@ -7,7 +7,8 @@
   "HomePage": {
     "title": "GroundTruth",
     "description": "Scaffolding in progress — see docs/projects/groundtruth.md.",
-    "browseListings": "Browse listings"
+    "browseListings": "Browse listings",
+    "viewDealFeed": "See real closed deals"
   },
   "Login": {
     "title": "Sign in",
@@ -92,5 +93,10 @@
     "simulateFailure": "Simulate failed payment",
     "revealContact": "Reveal seller's phone number",
     "sellerPhoneLabel": "Seller's phone number"
+  },
+  "DealFeed": {
+    "title": "Real closed deals",
+    "description": "Every deal here really happened — both the buyer and the seller confirmed it. No names, just zone, type, and price.",
+    "empty": "No closed deals yet."
   }
 }

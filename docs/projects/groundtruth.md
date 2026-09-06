@@ -227,6 +227,13 @@ real hosted checkout and must be deleted once a real adapter lands — see
 `apps/web/CLAUDE.md`'s "Pay-to-reveal paywall & credit ledger" section for the full
 breakdown. Next up: COM-22 (public anonymized deal feed).
 
+COM-22 done: public anonymized deal feed. `(site)/[locale]/deals` lists real
+`'closed'` deals (COM-20) — zone/type/price only, no session required, linked from
+the homepage. `lib/deals/feed.ts` explicitly selects only those anonymized columns
+rather than the whole `deals` row, so a future identity-bearing column can't leak
+into it by accident. See `apps/web/CLAUDE.md`'s "Public anonymized deal feed"
+section. Next up: COM-23 (valuation engine).
+
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
 tracked as tripwires per the roadmap table above.

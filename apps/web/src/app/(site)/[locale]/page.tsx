@@ -11,6 +11,9 @@ export default function HomePage() {
       <p>
         <Link href="/listings">{t('browseListings')}</Link>
       </p>
+      <p>
+        <Link href="/deals">{t('viewDealFeed')}</Link>
+      </p>
     </main>
   );
 }
