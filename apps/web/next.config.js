@@ -1,3 +1,7 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // This repo maintains its own CLAUDE.md/docs hierarchy (see root CLAUDE.md's
@@ -6,4 +10,4 @@ const nextConfig = {
   agentRules: false,
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

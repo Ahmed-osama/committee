@@ -1,0 +1,11 @@
+{
+  "_comment": "Placeholder only — same English copy as messages/en.json. Real Arabic translation is COM-25, not this issue. Keep this file's key structure identical to en.json until then.",
+  "Metadata": {
+    "title": "GroundTruth",
+    "description": "Direct seller/buyer real-estate negotiation with a game-resistant valuation signal."
+  },
+  "HomePage": {
+    "title": "GroundTruth",
+    "description": "Scaffolding in progress — see docs/projects/groundtruth.md."
+  }
+}

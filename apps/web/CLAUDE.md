@@ -11,6 +11,32 @@ product spec/audience/roadmap; this file is implementation-level detail for this
   `next/navigation` imports are blocked here by the `no-restricted-imports` rule in
   `eslint.config.js` — route handlers/Server Components read those APIs and pass plain
   values into `src/lib` functions, not the other way around.
+- `src/i18n/` — `next-intl` wiring: `routing.ts` (locales/default locale/RTL set),
+  `navigation.ts` (locale-aware `Link`/`redirect`/`usePathname`/`useRouter` — use these
+  instead of `next/navigation` directly so locale prefixes stay correct), `request.ts`
+  (server-side message loading, wired into `next.config.js` via `next-intl/plugin`).
+- `src/proxy.ts` — Next 16 renamed the `middleware.ts` convention to `proxy.ts`; this is
+  where `next-intl`'s locale-detection middleware runs. Its `matcher` explicitly excludes
+  `/admin` (COM-24's dashboard) — never let that route get a locale prefix.
+
+## i18n / RTL (COM-16)
+- All routes live under `src/app/(site)/[locale]/` — a route group (`(site)`) wrapping the
+  `[locale]` dynamic segment, specifically so `src/app/(admin)/admin/` (COM-24) can be a
+  second, sibling **root layout** with its own `<html>`/`<body>` that never gets wrapped in
+  `next-intl`'s provider or a locale prefix. Follow that same `(group)/route` pattern when
+  adding COM-24 — don't nest `admin/` inside `[locale]/`.
+- Locales: `ar` (default) and `en`, defined in `src/i18n/routing.ts`. `ar` is default
+  because the audience is Arabic-first (see `docs/projects/groundtruth.md`) — `en` exists
+  for internal/dev use, not end users.
+- RTL: `LocaleLayout` (`src/app/(site)/[locale]/layout.tsx`) sets `<html dir="rtl">` for
+  any locale in the `RTL_LOCALES` set (currently just `ar`) — check against that set, not a
+  hardcoded `locale === 'ar'`, so adding another RTL locale later is one line.
+- **Convention: all UI copy goes through `next-intl` message keys** (`useTranslations`/
+  `getTranslations`, never a hardcoded string in JSX) — `messages/en.json` is the source of
+  truth today. `messages/ar.json` currently mirrors the English text verbatim as a
+  placeholder (see its `_comment` key) — the real Arabic translation pass is COM-25, not
+  this issue. Don't let `ar.json`'s key structure drift from `en.json`'s between now and
+  then.
 
 ## Data access
 Uses `@committee/db` (`packages/db`) rather than talking to Postgres directly. See that

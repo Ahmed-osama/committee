@@ -149,7 +149,15 @@ COM-15 done: vendor spike written up at `docs/projects/groundtruth-vendor-spike.
 recommendations, founder decides before any contract/API keys). `packages/auth-providers`
 defines the vendor-agnostic `KycProvider`/`OtpProvider` interfaces plus mock
 implementations that COM-18 codes against regardless of which vendor is finally chosen.
-Next up per the roadmap: COM-16 (i18n foundation).
+
+COM-16 done: `next-intl` wired into `apps/web` — locale routing under
+`src/app/(site)/[locale]/` (`ar` default/RTL, `en` for dev), `src/proxy.ts` for locale
+detection (Next 16's `middleware.ts` → `proxy.ts` rename), `dir="rtl"` driven off an
+`RTL_LOCALES` set. `messages/en.json` is the source of truth; `messages/ar.json` mirrors
+it verbatim as a placeholder pending COM-25's real translation pass. The `(site)` route
+group exists specifically so COM-24's `/admin` can be a sibling unlocalized root layout
+later — see `apps/web/CLAUDE.md`. Next up per the roadmap: COM-18 (auth/KYC), which COM-17
+(listings) depends on for authenticated sellers.
 
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
