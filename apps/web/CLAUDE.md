@@ -32,11 +32,12 @@ product spec/audience/roadmap; this file is implementation-level detail for this
   any locale in the `RTL_LOCALES` set (currently just `ar`) — check against that set, not a
   hardcoded `locale === 'ar'`, so adding another RTL locale later is one line.
 - **Convention: all UI copy goes through `next-intl` message keys** (`useTranslations`/
-  `getTranslations`, never a hardcoded string in JSX) — `messages/en.json` is the source of
-  truth today. `messages/ar.json` currently mirrors the English text verbatim as a
-  placeholder (see its `_comment` key) — the real Arabic translation pass is COM-25, not
-  this issue. Don't let `ar.json`'s key structure drift from `en.json`'s between now and
-  then.
+  `getTranslations`, never a hardcoded string in JSX) — `messages/en.json` is the
+  source of truth for keys (add a key there first), `messages/ar.json` carries the
+  real Arabic copy (COM-25 replaced its English-mirrored placeholder with an actual
+  translation pass — see that section below). Keep `ar.json`'s key structure in sync
+  with `en.json`'s; a new key always needs both a real English and a real Arabic
+  value, not an English-in-Arabic-slot placeholder.
 
 ## Data access
 Uses `@committee/db` (`packages/db`) rather than talking to Postgres directly. See that
@@ -308,6 +309,23 @@ smoke test, not just a clean typecheck.
   Postgres, and the route itself via a dev-server smoke test (confirms Next's
   multiple-root-layouts support actually works for this `(admin)`/`(site)` split, not
   just typechecks).
+
+## Arabic UI copy pass (COM-25)
+- `messages/ar.json` now carries real Arabic translations for every key introduced
+  through COM-22 (COM-16/17/18/19/20/21/22) — not the English-mirrored placeholder it
+  shipped with under COM-16. `(admin)/admin` (COM-24) is excluded, as it doesn't use
+  `next-intl` at all (see that section above).
+- Wording deliberately favors plain, everyday words over formal/literary Arabic or
+  real-estate jargon, per `docs/projects/groundtruth.md`'s audience constraint
+  (farmers, older/less-educated users) — e.g. `بيت` for "house" rather than a more
+  formal `مسكن`, `عرض مقابل` for "counter-offer" rather than a literal/technical
+  negotiation term.
+- `en.json` stays the source of truth for which keys exist; `ar.json`'s key structure
+  must stay in exact sync with it (verified here by a deep key-diff, not just
+  top-level namespaces matching) — a new key going forward needs a real value in both
+  files from the start, never an English-in-Arabic-slot placeholder.
+- Validated via a dev-server smoke test: `/ar` renders `<html lang="ar" dir="rtl">`
+  with the real Arabic copy (not just the `lang`/`dir` attributes flipping).
 
 ## Conventions specific to this app
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise

@@ -253,6 +253,14 @@ schema. Nothing here takes action automatically; see `apps/web/CLAUDE.md`'s "Adm
 anti-gaming & moderation dashboard" section. Next up: COM-25 (Arabic UI copy pass —
 this dashboard is explicitly excluded from it).
 
+COM-25 done: Arabic UI copy pass. `messages/ar.json` replaced its COM-16-era
+English-mirrored placeholder with real Arabic translations for every key introduced
+through COM-22 (`(admin)/admin`'s COM-24 dashboard excluded — it isn't localized at
+all). Wording favors plain, everyday words over formal/jargon Arabic, per this doc's
+audience constraint. Key-structure parity between `en.json`/`ar.json` verified with a
+deep key-diff, not just eyeballing. See `apps/web/CLAUDE.md`'s "Arabic UI copy pass"
+section.
+
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
 tracked as tripwires per the roadmap table above.

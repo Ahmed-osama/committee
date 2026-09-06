@@ -1,107 +1,106 @@
 {
-  "_comment": "Placeholder only — same English copy as messages/en.json. Real Arabic translation is COM-25, not this issue. Keep this file's key structure identical to en.json until then.",
   "Metadata": {
     "title": "GroundTruth",
-    "description": "Direct seller/buyer real-estate negotiation with a game-resistant valuation signal."
+    "description": "تواصل مباشر بين البائع والمشتري لبيع وشراء العقارات، بسعر عادل مبني على صفقات حقيقية."
   },
   "HomePage": {
     "title": "GroundTruth",
-    "description": "Scaffolding in progress — see docs/projects/groundtruth.md.",
-    "browseListings": "Browse listings",
-    "viewDealFeed": "See real closed deals"
+    "description": "الموقع لسه قيد التجهيز.",
+    "browseListings": "تصفح الإعلانات",
+    "viewDealFeed": "شوف الصفقات الحقيقية اللي تمت"
   },
   "Login": {
-    "title": "Sign in",
-    "phoneLabel": "Phone number",
+    "title": "تسجيل الدخول",
+    "phoneLabel": "رقم الموبايل",
     "phonePlaceholder": "+201001234567",
-    "sendCode": "Send code",
-    "codeLabel": "Code",
-    "verifyCode": "Verify",
-    "sendError": "Couldn't send the code. Check the number and try again.",
-    "verifyError": "Incorrect code. Try again.",
-    "success": "Signed in."
+    "sendCode": "إرسال الكود",
+    "codeLabel": "الكود",
+    "verifyCode": "تأكيد",
+    "sendError": "تعذر إرسال الكود. تأكد من الرقم وحاول مرة أخرى.",
+    "verifyError": "الكود غير صحيح. حاول مرة أخرى.",
+    "success": "تم تسجيل الدخول."
   },
   "Listings": {
-    "browseTitle": "Listings",
-    "empty": "No listings yet.",
-    "newListing": "New listing",
-    "priceLabel": "Price",
-    "areaLabel": "Area",
-    "zoneLabel": "Zone",
-    "typeLabel": "Type",
+    "browseTitle": "الإعلانات",
+    "empty": "لا توجد إعلانات حتى الآن.",
+    "newListing": "إعلان جديد",
+    "priceLabel": "السعر",
+    "areaLabel": "المساحة",
+    "zoneLabel": "المنطقة",
+    "typeLabel": "النوع",
     "type": {
-      "apartment": "Apartment",
-      "house": "House",
-      "land": "Land",
-      "commercial": "Commercial"
+      "apartment": "شقة",
+      "house": "بيت",
+      "land": "أرض",
+      "commercial": "تجاري"
     },
-    "detailNotFound": "This listing isn't available.",
-    "backToListings": "Back to listings",
-    "createTitle": "New listing",
-    "titleLabel": "Title",
-    "descriptionLabel": "Description",
-    "submit": "Publish listing",
-    "signInToCreate": "Sign in to publish a listing.",
-    "kycRequired": "Your ID verification must be approved before you can publish a listing."
+    "detailNotFound": "هذا الإعلان غير متاح.",
+    "backToListings": "الرجوع إلى الإعلانات",
+    "createTitle": "إعلان جديد",
+    "titleLabel": "العنوان",
+    "descriptionLabel": "الوصف",
+    "submit": "نشر الإعلان",
+    "signInToCreate": "سجّل دخولك لنشر إعلان.",
+    "kycRequired": "لازم يتم قبول توثيق هويتك الأول قبل ما تقدر تنشر إعلان."
   },
   "Negotiations": {
-    "offerPriceLabel": "Your offer (EGP)",
-    "makeOffer": "Make an offer",
-    "threadTitle": "Negotiation",
-    "statusLabel": "Status",
+    "offerPriceLabel": "عرضك (بالجنيه)",
+    "makeOffer": "قدّم عرض سعر",
+    "threadTitle": "التفاوض على السعر",
+    "statusLabel": "الحالة",
     "status": {
-      "open": "Open",
-      "accepted": "Accepted",
-      "rejected": "Rejected"
+      "open": "مفتوح",
+      "accepted": "تمت الموافقة",
+      "rejected": "تم الرفض"
     },
-    "currentPriceLabel": "Current price",
-    "counterPriceLabel": "Your counter-offer (EGP)",
-    "accept": "Accept",
-    "reject": "Reject",
-    "counter": "Send counter-offer",
-    "waitingOnOtherParty": "Waiting for the other party to respond.",
+    "currentPriceLabel": "السعر الحالي",
+    "counterPriceLabel": "عرضك المقابل (بالجنيه)",
+    "accept": "موافقة",
+    "reject": "رفض",
+    "counter": "إرسال عرض مقابل",
+    "waitingOnOtherParty": "في انتظار رد الطرف الآخر.",
     "event": {
-      "offer": "Offer made",
-      "counter": "Counter-offer",
-      "accept": "Accepted",
-      "reject": "Rejected"
+      "offer": "تم تقديم عرض",
+      "counter": "عرض مقابل",
+      "accept": "تمت الموافقة",
+      "reject": "تم الرفض"
     },
-    "viewDeal": "View deal"
+    "viewDeal": "عرض الصفقة"
   },
   "Deals": {
-    "title": "Deal",
-    "agreedPriceLabel": "Agreed price",
-    "statusLabel": "Status",
+    "title": "الصفقة",
+    "agreedPriceLabel": "السعر المتفق عليه",
+    "statusLabel": "الحالة",
     "status": {
-      "pending": "Waiting for both sides to confirm",
-      "closed": "Closed"
+      "pending": "في انتظار تأكيد الطرفين",
+      "closed": "تمت الصفقة"
     },
-    "otherPartyConfirmed": "The other party has confirmed this deal.",
-    "otherPartyPending": "Waiting for the other party to confirm.",
-    "youConfirmed": "You've confirmed this deal.",
-    "confirm": "Confirm this deal happened"
+    "otherPartyConfirmed": "الطرف الآخر أكّد هذه الصفقة.",
+    "otherPartyPending": "في انتظار تأكيد الطرف الآخر.",
+    "youConfirmed": "لقد أكّدت هذه الصفقة.",
+    "confirm": "أكّد أن هذه الصفقة تمت فعلاً"
   },
   "Credits": {
-    "title": "Credits",
-    "signInRequired": "Sign in to buy or spend credits.",
-    "balanceLabel": "Your balance",
-    "creditsUnit": "credits",
-    "buy": "Buy",
-    "mockCheckoutTitle": "Payment (test mode)",
-    "mockCheckoutNotice": "This is a stand-in for the real payment page — no real payment provider is connected yet.",
-    "simulateSuccess": "Simulate successful payment",
-    "simulateFailure": "Simulate failed payment",
-    "revealContact": "Reveal seller's phone number",
-    "sellerPhoneLabel": "Seller's phone number"
+    "title": "الرصيد",
+    "signInRequired": "سجّل دخولك لشراء أو استخدام الرصيد.",
+    "balanceLabel": "رصيدك الحالي",
+    "creditsUnit": "نقطة",
+    "buy": "شراء",
+    "mockCheckoutTitle": "الدفع (وضع تجريبي)",
+    "mockCheckoutNotice": "هذه صفحة تجريبية بديلة لصفحة الدفع الحقيقية — لم يتم ربط وسيلة دفع حقيقية بعد.",
+    "simulateSuccess": "محاكاة دفع ناجح",
+    "simulateFailure": "محاكاة دفع فاشل",
+    "revealContact": "إظهار رقم موبايل البائع",
+    "sellerPhoneLabel": "رقم موبايل البائع"
   },
   "DealFeed": {
-    "title": "Real closed deals",
-    "description": "Every deal here really happened — both the buyer and the seller confirmed it. No names, just zone, type, and price.",
-    "empty": "No closed deals yet."
+    "title": "صفقات حقيقية تمت بالفعل",
+    "description": "كل صفقة هنا حصلت فعلاً، وأكّدها البائع والمشتري. بدون أسماء، فقط المنطقة والنوع والسعر.",
+    "empty": "لا توجد صفقات حتى الآن."
   },
   "Valuation": {
-    "label": "Typical price for this area",
-    "perSqm": "EGP/m²",
-    "basedOn": "based on {count} real deals"
+    "label": "السعر المعتاد في هذه المنطقة",
+    "perSqm": "جنيه للمتر",
+    "basedOn": "بناءً على {count} صفقة حقيقية"
   }
 }
