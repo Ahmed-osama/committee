@@ -214,6 +214,19 @@ on repeat confirmation); `deals.ts` wraps it with `pooledDb.transaction(...)` +
 "Dual-confirmed deal closure" section, including the known gap that a closed deal
 doesn't yet auto-archive its listing. Next up: COM-21 (pay-to-reveal paywall).
 
+COM-21 done: pay-to-reveal paywall + credit ledger. New `packages/payment-providers`
+(mirrors `auth-providers`'s vendor-agnostic-interface pattern) defines
+`PaymentProvider` + `MockPaymentProvider` for Paymob (confirmed vendor, no real
+account/credentials yet). Credits are a `SUM`-of-ledger balance, never a mutable
+counter; a purchase only grants credits once a webhook reports success, guarded
+against double-crediting on webhook retries via `pooledDb.transaction(...)` +
+`.for('update')`. Revealing a listing's seller phone costs a flat
+`REVEAL_COST_CREDITS`, guarded against double-charging by a unique
+`(listingId, buyerId)` index. A dev-only mock checkout page stands in for Paymob's
+real hosted checkout and must be deleted once a real adapter lands — see
+`apps/web/CLAUDE.md`'s "Pay-to-reveal paywall & credit ledger" section for the full
+breakdown. Next up: COM-22 (public anonymized deal feed).
+
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
 tracked as tripwires per the roadmap table above.

@@ -14,7 +14,7 @@ const nextConfig = {
   // when those packages run standalone (db:migrate, their own test scripts). Without
   // transpilePackages, the bundler treats them as opaque node_modules and never looks
   // inside; with it, the specifier `.js` still needs mapping to the real `.ts` file.
-  transpilePackages: ['@committee/db', '@committee/auth-providers'],
+  transpilePackages: ['@committee/db', '@committee/auth-providers', '@committee/payment-providers'],
   webpack(config) {
     // webpack's own version of the same NodeNext .js-means-.ts mapping. This is why
     // apps/web's dev/build scripts (package.json) pass --webpack explicitly — as of

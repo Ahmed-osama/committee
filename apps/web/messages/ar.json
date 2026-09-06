@@ -79,5 +79,18 @@
     "otherPartyPending": "Waiting for the other party to confirm.",
     "youConfirmed": "You've confirmed this deal.",
     "confirm": "Confirm this deal happened"
+  },
+  "Credits": {
+    "title": "Credits",
+    "signInRequired": "Sign in to buy or spend credits.",
+    "balanceLabel": "Your balance",
+    "creditsUnit": "credits",
+    "buy": "Buy",
+    "mockCheckoutTitle": "Payment (test mode)",
+    "mockCheckoutNotice": "This is a stand-in for the real payment page — no real payment provider is connected yet.",
+    "simulateSuccess": "Simulate successful payment",
+    "simulateFailure": "Simulate failed payment",
+    "revealContact": "Reveal seller's phone number",
+    "sellerPhoneLabel": "Seller's phone number"
   }
 }

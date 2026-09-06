@@ -105,6 +105,9 @@ importers:
       '@committee/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@committee/payment-providers':
+        specifier: workspace:*
+        version: link:../../packages/payment-providers
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@neondatabase/serverless@1.1.0)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
@@ -231,6 +234,18 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  packages/payment-providers:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.4.0
+        version: 26.4.0
       tsx:
         specifier: ^4.23.13
         version: 4.23.13

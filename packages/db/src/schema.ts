@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 
@@ -156,3 +156,57 @@ export const deals = pgTable('deals', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const creditPurchaseStatusEnum = pgEnum('credit_purchase_status', ['pending', 'completed', 'failed']);
+
+// One row per Paymob (or mock, pending COM-15's vendor pick — see
+// packages/payment-providers) checkout attempt. `providerReference` is unique so the
+// webhook handler (apps/web/src/lib/payments/credits.ts) can look up which purchase a
+// webhook event belongs to, and idempotently no-op a retried webhook delivery once
+// `status` has left 'pending'. Credits are only added to the ledger below once a
+// purchase reaches 'completed' — never optimistically at checkout-creation time.
+export const creditPurchases = pgTable('credit_purchases', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  providerReference: text('provider_reference').notNull().unique(),
+  packageId: text('package_id').notNull(),
+  credits: integer('credits').notNull(),
+  priceEgp: integer('price_egp').notNull(),
+  status: creditPurchaseStatusEnum('status').notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const creditLedgerReasonEnum = pgEnum('credit_ledger_reason', ['purchase', 'reveal']);
+
+// Append-only, source-of-truth ledger — a user's credit balance is always
+// SUM(amount), never a mutable counter column, so it can never drift out of sync with
+// what was actually purchased/spent. `referenceId` points at the `creditPurchases.id`
+// for a 'purchase' row or the revealed `listings.id` for a 'reveal' row.
+export const creditLedgerEntries = pgTable('credit_ledger_entries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  amount: integer('amount').notNull(),
+  reason: creditLedgerReasonEnum('reason').notNull(),
+  referenceId: text('reference_id').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// One row per (listing, buyer) — the pay-to-reveal paywall's gate. A unique
+// constraint on the pair means a buyer is only ever charged once per listing;
+// revisiting an already-revealed listing re-reads this row instead of re-charging.
+export const contactReveals = pgTable('contact_reveals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  listingId: uuid('listing_id')
+    .notNull()
+    .references(() => listings.id, { onDelete: 'cascade' }),
+  buyerId: uuid('buyer_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  creditsSpent: integer('credits_spent').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [unique().on(table.listingId, table.buyerId)]);

@@ -193,6 +193,56 @@ smoke test, not just a clean typecheck.
   negotiation. The Neon-driver-needs-a-real-endpoint limitation still applies to
   exercising `pooledDb`/`db` themselves through a live route.
 
+## Pay-to-reveal paywall & credit ledger (COM-21)
+- `packages/payment-providers` — new sibling package to `auth-providers`, same
+  vendor-agnostic-interface pattern: `PaymentProvider` (`createCheckout`,
+  `parseWebhookEvent`) plus `MockPaymentProvider`. Paymob is the confirmed vendor
+  (`docs/projects/groundtruth.md`'s post-round-5 correction — Stripe doesn't work for
+  an Egypt-based business without a foreign entity) but no real account/credentials
+  exist yet. Add it to `next.config.js`'s `transpilePackages` alongside `@committee/db`
+  and `@committee/auth-providers` — same bundler-quirk reasoning.
+- `src/lib/payments/providers.ts` — the one place a real `PaymobPaymentProvider`
+  swaps in later, mirroring `lib/auth/providers.ts`.
+- `src/lib/payments/packages.ts` — `CREDIT_PACKAGES` (placeholder EGP pricing) and
+  `REVEAL_COST_CREDITS` (flat cost per listing reveal). Product/pricing config lives
+  in `apps/web`, not the vendor-agnostic package.
+- `src/lib/payments/credits.ts`:
+  - Balance is always `SUM(credit_ledger_entries.amount)` — never a mutable counter
+    column (`packages/db`'s `creditLedgerEntries` table doc explains why).
+  - `startCreditPurchase`/`handlePaymentWebhook` — credits are granted only once a
+    webhook reports `'succeeded'` for a `pending` purchase, never optimistically at
+    checkout-creation time. `handlePaymentWebhook` uses `pooledDb.transaction(...)` +
+    `.for('update')` so a retried webhook delivery (normal for real payment vendors)
+    can't double-credit — a purchase past `'pending'` short-circuits to a no-op.
+  - `revealSellerContact` — same lock-then-check-then-spend shape as COM-19/20, over
+    the buyer's own ledger rows; `contactReveals`' unique `(listingId, buyerId)` index
+    is the actual re-charge guard, the in-code "already revealed?" check is just the
+    fast path. Known gap noted in the function's own comment: a buyer with zero
+    ledger rows yet has nothing to lock, but that only means two concurrent first-ever
+    reveals both consistently fail (balance 0), never both succeed — not a real
+    double-spend.
+- `(site)/[locale]/credits/mock-checkout/[reference]/` — a dev-only stand-in for
+  Paymob's real hosted checkout, since no real vendor account exists. Its
+  "simulate payment" buttons construct an HMAC-signed payload (via
+  `MockPaymentProvider.signWebhookPayload`, not part of the `PaymentProvider`
+  interface) and call the same `handlePaymentWebhook` a real webhook would. **Delete
+  this route entirely once a real Paymob adapter lands** — a real vendor's webhook
+  always arrives server-to-server, never through a page the buyer's own browser can
+  trigger.
+- Routes: `POST /api/credits/purchase`, `POST /api/payments/webhook` (signature
+  header name is a placeholder pending real Paymob docs — see the `TODO(human)` in
+  that route), `POST /api/listings/[id]/reveal-contact`. Pages: `(site)/[locale]/
+  credits` (balance + package list), listing detail page grows a reveal-contact
+  section for any authenticated non-owner.
+- Validated the same way as COM-19/20: full purchase → webhook-completes → reveal →
+  double-charge-guard SQL sequence run directly against local Postgres (including
+  confirming `contact_reveals`' unique constraint rejects a second charge). Dev-server
+  smoke test confirms `@committee/payment-providers` resolves correctly through the
+  bundler (no "Module not found" — see the bundler-quirk section) for routes that
+  don't need the DB (`/credits` signed-out, the mock checkout page); routes that do
+  hit the DB still hit the same Neon-driver-needs-a-real-endpoint limitation as
+  COM-17-20.
+
 ## Conventions specific to this app
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise
   auto-generates/overwrites `AGENTS.md`/`CLAUDE.md` in this directory on every run, which

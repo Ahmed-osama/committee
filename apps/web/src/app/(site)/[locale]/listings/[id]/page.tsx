@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation';
 import { Link } from '@/i18n/navigation';
 import { getSession } from '@/app/api/_lib/session';
 import { getListingWithPhotos } from '@/lib/listings/listings';
+import { getExistingReveal } from '@/lib/payments/credits';
 import { makeOfferAction } from './offer-actions';
+import { revealContactAction } from './reveal-actions';
 
 // See listings/page.tsx's comment — same reasoning (direct DB query, no DB at build
 // time in this repo).
@@ -13,6 +15,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const t = await getTranslations('Listings');
   const tn = await getTranslations('Negotiations');
+  const tc = await getTranslations('Credits');
   const result = await getListingWithPhotos(id);
 
   if (!result || result.listing.status !== 'active') {
@@ -21,7 +24,9 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
   const { listing, photos } = result;
   const session = await getSession();
-  const canMakeOffer = session != null && session.userId !== listing.sellerId;
+  const isOwner = session != null && session.userId === listing.sellerId;
+  const canMakeOffer = session != null && !isOwner;
+  const reveal = session != null && !isOwner ? await getExistingReveal(session.userId, listing.id) : null;
 
   return (
     <main>
@@ -61,6 +66,18 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           </label>
           <button type="submit">{tn('makeOffer')}</button>
         </form>
+      ) : null}
+      {session != null && !isOwner ? (
+        reveal ? (
+          <p>
+            {tc('sellerPhoneLabel')}: {reveal.phone}
+          </p>
+        ) : (
+          <form action={revealContactAction}>
+            <input type="hidden" name="listingId" value={listing.id} />
+            <button type="submit">{tc('revealContact')}</button>
+          </form>
+        )
       ) : null}
     </main>
   );
