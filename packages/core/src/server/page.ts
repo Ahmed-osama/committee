@@ -42,7 +42,7 @@ export const PAGE_HTML = `<!doctype html>
   .conv-item { padding: 0.55rem 0.65rem; border-radius: 9px; cursor: pointer; font-size: 0.83rem; line-height: 1.4; display: flex; align-items: flex-start; justify-content: space-between; gap: 0.4rem; background: var(--bg-raised); border: 1px solid transparent; transition: border-color .12s; min-width: 0; }
   .conv-item:hover { border-color: var(--border); }
   .conv-item.active { border-color: var(--planner); }
-  .conv-item .goal { display: block; overflow-wrap: anywhere; }
+  .conv-item .goal { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .conv-item .status { font-size: 0.68rem; color: var(--muted); margin-top: 0.2rem; text-transform: capitalize; }
   .conv-item .remove-btn { flex-shrink: 0; background: none !important; border: none; color: var(--muted); font-size: 0.95rem; line-height: 1; padding: 0.1rem 0.3rem; font-weight: 400; box-shadow: none; }
   .conv-item .remove-btn:hover { color: var(--danger); opacity: 1; }
@@ -76,7 +76,10 @@ export const PAGE_HTML = `<!doctype html>
   #composerHint { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.5rem; max-width: 760px; }
   #injectForm { display: flex; gap: 0.5rem; max-width: 760px; align-items: flex-end; }
   #injectInput { flex: 1; min-height: 5.5rem; padding: 0.75rem 0.9rem; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--fg); font-size: 0.9rem; font-family: inherit; resize: vertical; }
-  #stopBtn { display: none; background: var(--danger); margin-top: 0.55rem; max-width: 760px; }
+  #liveControls { display: none; gap: 0.5rem; margin-top: 0.55rem; max-width: 760px; }
+  #pauseBtn { background: var(--bg-raised); color: var(--fg); border: 1px solid var(--border); box-shadow: none; }
+  #stopBtn { background: var(--danger); }
+  #pausedBanner { display: none; font-size: 0.8rem; color: var(--human); font-weight: 600; margin: 0.4rem 0 0; }
 
   .thinking { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.83rem; padding: 0.4rem 0.1rem; }
   .thinking .dots { display: flex; gap: 3px; }
@@ -95,6 +98,7 @@ export const PAGE_HTML = `<!doctype html>
   .plan-visual svg { max-width: 100%; height: auto; }
 
   #emptyState { color: var(--muted); font-size: 0.88rem; padding: 2rem 0; }
+  .empty-panel { color: var(--muted); font-size: 0.9rem; padding: 3rem 1rem; text-align: center; max-width: 460px; margin: 0 auto; }
 </style>
 </head>
 <body>
@@ -125,11 +129,16 @@ export const PAGE_HTML = `<!doctype html>
     </div>
     <div id="composer">
       <div id="composerHint"></div>
+      <div id="pausedBanner">⏸ Paused — waiting for you</div>
       <form id="injectForm">
         <textarea id="injectInput" rows="3" placeholder="Type a message…"></textarea>
-        <button type="submit">Send</button>
+        <button type="submit" data-mode="execute">Send</button>
+        <button type="submit" data-mode="regenerate" id="regenerateBtn" style="display:none">Reopen &amp; regenerate</button>
       </form>
-      <button id="stopBtn" type="button">Stop conversation</button>
+      <div id="liveControls">
+        <button id="pauseBtn" type="button">Pause</button>
+        <button id="stopBtn" type="button">Stop conversation</button>
+      </div>
     </div>
   </div>
 
@@ -145,7 +154,11 @@ const composer = document.getElementById('composer');
 const composerHint = document.getElementById('composerHint');
 const injectForm = document.getElementById('injectForm');
 const injectInput = document.getElementById('injectInput');
+const regenerateBtn = document.getElementById('regenerateBtn');
+const liveControls = document.getElementById('liveControls');
+const pauseBtn = document.getElementById('pauseBtn');
 const stopBtn = document.getElementById('stopBtn');
+const pausedBanner = document.getElementById('pausedBanner');
 const newConvBtn = document.getElementById('newConvBtn');
 
 const ROLE_COLOR = {
@@ -158,6 +171,13 @@ let agentsById = {};
 let agentsList = [];
 let currentConversationId = null;
 let activeAgentId = null;
+let conversationCount = 0;
+let titleRefreshed = false;
+
+function truncate(s, n) {
+  s = String(s);
+  return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s;
+}
 
 async function loadAgents() {
   const res = await fetch('/api/agents');
@@ -200,9 +220,10 @@ function agentColor(id) {
 async function loadConversations() {
   const res = await fetch('/api/conversations');
   const rows = await res.json();
+  conversationCount = rows.length;
   convList.innerHTML = rows.length ? rows.map(c =>
     \`<div class="conv-item\${c.id === currentConversationId ? ' active' : ''}" onclick="viewConversation('\${c.id}')">
-       <div><span class="goal">\${escapeHtml(c.goal)}</span><div class="status">\${escapeHtml(c.status)}</div></div>
+       <div><span class="goal">\${escapeHtml(truncate(c.title || c.goal, 48))}</span><div class="status">\${escapeHtml(c.status)}</div></div>
        <button class="remove-btn" title="Delete conversation" onclick="removeConversation(event, '\${c.id}')">✕</button>
      </div>\`
   ).join('') : '<div id="emptyState">No conversations yet.</div>';
@@ -266,8 +287,14 @@ function renderTurn(m) {
   scrollToBottom();
 }
 
-function setStopVisible(visible) {
-  stopBtn.style.display = visible ? 'block' : 'none';
+function setLiveControlsVisible(visible) {
+  liveControls.style.display = visible ? 'flex' : 'none';
+  if (!visible) setPaused(false);
+}
+
+function setPaused(paused) {
+  pausedBanner.style.display = paused ? 'block' : 'none';
+  pauseBtn.textContent = paused ? 'Resume' : 'Pause';
 }
 
 function setStatus(text, cls) {
@@ -278,7 +305,8 @@ function setStatus(text, cls) {
 function setComposerHint(status) {
   composerHint.textContent = status === 'in_progress'
     ? 'This gets read out loud to the agents before the next one speaks.'
-    : 'The plan is settled — tell an agent what to actually do in the codebase, and it\\'ll use real tools to do it.';
+    : 'Tell an agent what to actually do in the codebase (it\\'ll use real tools), or reopen the debate with new feedback.';
+  regenerateBtn.style.display = status === 'finalized' ? 'inline-block' : 'none';
 }
 
 let currentEventSource = null;
@@ -286,27 +314,33 @@ function closeWatch() {
   if (currentEventSource) { currentEventSource.close(); currentEventSource = null; }
 }
 
+const EMPTY_NO_CONVERSATIONS = '<div class="empty-panel">No conversations yet — describe a goal above to start your first committee debate.</div>';
+const EMPTY_NO_SELECTION = '<div class="empty-panel">Select a conversation on the left, or start a new one above.</div>';
+
 /** No conversation selected yet — show the goal form, hide the chat composer. */
-function showNewConversationForm() {
+function showNewConversationForm(pushUrl) {
   closeWatch();
   currentConversationId = null;
   setActiveAgent(null);
-  transcript.innerHTML = '';
+  transcript.innerHTML = conversationCount === 0 ? EMPTY_NO_CONVERSATIONS : EMPTY_NO_SELECTION;
   planOutput.innerHTML = '';
   setStatus('', '');
   goalForm.style.display = 'flex';
   composer.style.display = 'none';
   document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+  if (pushUrl !== false) history.pushState(null, '', '/');
 }
 
-async function viewConversation(id) {
+async function viewConversation(id, pushUrl) {
   closeWatch();
   currentConversationId = id;
+  titleRefreshed = false;
   transcript.innerHTML = '';
   planOutput.innerHTML = '';
   setActiveAgent(null);
   goalForm.style.display = 'none';
   composer.style.display = 'block';
+  if (pushUrl !== false) history.pushState(null, '', '/c/' + id);
   const res = await fetch('/api/conversations/' + id);
   const { conversation, transcript: msgs } = await res.json();
   if (conversation.status === 'failed') setStatus('⚠ Stopped — every configured model became unavailable (rate limit/quota). Try again, or check server logs.', 'error');
@@ -316,11 +350,11 @@ async function viewConversation(id) {
   setComposerHint(conversation.status);
   msgs.forEach(renderTurn);
   removeThinking();
-  if (conversation.status === 'in_progress') { showThinking(); setStopVisible(true); watch(id); }
+  if (conversation.status === 'in_progress') { showThinking(); setLiveControlsVisible(true); watch(id); }
   else {
-    setStopVisible(false);
+    setLiveControlsVisible(false);
     if (conversation.status === 'finalized') {
-      const finalizeMsg = msgs.find(m => m.intent === 'finalize');
+      const finalizeMsg = msgs.slice().reverse().find(m => m.intent === 'finalize');
       if (finalizeMsg) renderPlan(finalizeMsg.payload);
       renderPlanVisual(conversation.planVisualSvg);
     }
@@ -352,22 +386,28 @@ function watch(id) {
     setActiveAgent(null);
     renderTurn(m);
     if (m.intent !== 'finalize') showThinking();
+    if (!titleRefreshed) { titleRefreshed = true; loadConversations(); }
   });
   es.addEventListener('thinking', (e) => {
     const info = JSON.parse(e.data);
     setActiveAgent(info.agentId);
     showThinking(thinkingLabel(info));
   });
+  es.addEventListener('paused', (e) => {
+    const { paused } = JSON.parse(e.data);
+    setPaused(paused);
+    if (paused) removeThinking();
+  });
   es.addEventListener('finalized', async () => {
     closeWatch();
     removeThinking();
     setActiveAgent(null);
-    setStopVisible(false);
-    await viewConversation(id);
+    setLiveControlsVisible(false);
+    await viewConversation(id, false);
   });
 }
 
-newConvBtn.addEventListener('click', showNewConversationForm);
+newConvBtn.addEventListener('click', () => showNewConversationForm());
 
 goalForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -381,12 +421,14 @@ goalForm.addEventListener('submit', async (e) => {
   const res = await fetch('/api/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goal, maxTurns }) });
   const { conversationId } = await res.json();
   currentConversationId = conversationId;
+  titleRefreshed = false;
+  history.pushState(null, '', '/c/' + conversationId);
   goalForm.style.display = 'none';
   composer.style.display = 'block';
   setStatus('In progress…', '');
   setComposerHint('in_progress');
   showThinking();
-  setStopVisible(true);
+  setLiveControlsVisible(true);
   watch(conversationId);
   await loadConversations();
 });
@@ -396,6 +438,14 @@ stopBtn.addEventListener('click', async () => {
   stopBtn.disabled = true;
   await fetch('/api/conversations/' + currentConversationId + '/stop', { method: 'POST' });
   stopBtn.disabled = false;
+});
+
+pauseBtn.addEventListener('click', async () => {
+  if (!currentConversationId) return;
+  pauseBtn.disabled = true;
+  const action = pauseBtn.textContent === 'Resume' ? 'resume' : 'pause';
+  await fetch('/api/conversations/' + currentConversationId + '/' + action, { method: 'POST' });
+  pauseBtn.disabled = false;
 });
 
 injectInput.addEventListener('keydown', (e) => {
@@ -409,8 +459,33 @@ injectForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const content = injectInput.value.trim();
   if (!content || !currentConversationId) return;
+  const mode = (e.submitter && e.submitter.dataset.mode) || 'execute';
   injectInput.value = '';
-  const wasLive = stopBtn.style.display !== 'none';
+
+  if (mode === 'regenerate') {
+    setPaused(false);
+    planOutput.innerHTML = '';
+    setStatus('Reopening debate…', '');
+    setComposerHint('in_progress');
+    showThinking();
+    setLiveControlsVisible(true);
+    const res = await fetch('/api/conversations/' + currentConversationId + '/regenerate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+    if (res.ok) {
+      watch(currentConversationId);
+    } else {
+      const { error } = await res.json().catch(() => ({ error: 'request failed' }));
+      setStatus('⚠ ' + (error || 'request failed'), 'error');
+      setLiveControlsVisible(false);
+      removeThinking();
+    }
+    return;
+  }
+
+  const wasLive = liveControls.style.display !== 'none';
   if (!wasLive) showThinking('running your command…');
   const res = await fetch('/api/conversations/' + currentConversationId + '/inject', {
     method: 'POST',
@@ -429,8 +504,18 @@ injectForm.addEventListener('submit', async (e) => {
   }
 });
 
-showNewConversationForm();
-loadAgents().then(loadConversations);
+window.addEventListener('popstate', () => {
+  const m = location.pathname.match(/^\\/c\\/(.+)$/);
+  if (m) viewConversation(decodeURIComponent(m[1]), false);
+  else showNewConversationForm(false);
+});
+
+loadAgents().then(async () => {
+  await loadConversations();
+  const m = location.pathname.match(/^\\/c\\/(.+)$/);
+  if (m) viewConversation(decodeURIComponent(m[1]), false);
+  else showNewConversationForm(false);
+});
 </script>
 </body>
 </html>

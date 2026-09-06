@@ -36,4 +36,12 @@ export class EventBus {
     this.emitter.on('finalized', handler);
     return () => this.emitter.off('finalized', handler);
   }
+
+  emitPaused(conversationId: string, paused: boolean): void {
+    this.emitter.emit('paused', conversationId, paused);
+  }
+  onPaused(handler: (conversationId: string, paused: boolean) => void): () => void {
+    this.emitter.on('paused', handler);
+    return () => this.emitter.off('paused', handler);
+  }
 }

@@ -5,6 +5,7 @@ import { join, dirname } from 'node:path';
 import { desc } from 'drizzle-orm';
 import { runPlanningSession } from '../conversation/planning-session.js';
 import type { Message } from '../domain/message.js';
+import type { Conversation } from '../domain/conversation.js';
 import { EventBus } from '../orchestrator/event-bus.js';
 import { db } from '../persistence/db.js';
 import {
@@ -18,17 +19,20 @@ import {
 } from '../persistence/repositories/agent-repo.js';
 import { runExecutionTurn } from '../execution/execute-command.js';
 import { generatePlanVisual } from '../conversation/generate-plan-visual.js';
+import { generateConversationTitle } from '../conversation/generate-conversation-title.js';
 import {
   createConversation,
   deleteConversation,
   getConversation,
   setConversationPlanVisual,
+  setConversationTitle,
   updateConversationStatus,
 } from '../persistence/repositories/conversation-repo.js';
 import { getConversationTranscript } from '../persistence/repositories/message-repo.js';
 import { conversations } from '../persistence/schema.js';
 import { drain, enqueue } from '../orchestrator/injection-queue.js';
 import { clearStop, isStopRequested, requestStop } from '../orchestrator/stop-registry.js';
+import { clearPause, isPaused, requestPause } from '../orchestrator/pause-registry.js';
 import { isAgentReady, selectProvider } from '../provider/provider-router.js';
 import type { AgentConfig } from '../domain/agent.js';
 import { PAGE_HTML } from './page.js';
@@ -80,47 +84,54 @@ function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-async function handleStartPlan(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  let goal: string | undefined;
-  let maxTurns: number | undefined;
-  try {
-    ({ goal, maxTurns } = JSON.parse(await readBody(req)) as { goal?: string; maxTurns?: number });
-  } catch {
-    return sendJson(res, 400, { error: 'invalid JSON body' });
-  }
-  if (!goal?.trim()) return sendJson(res, 400, { error: 'goal is required' });
-  if (maxTurns !== undefined && (!Number.isFinite(maxTurns) || maxTurns < 1 || maxTurns > MAX_TURNS_LIMIT)) {
-    return sendJson(res, 400, { error: `maxTurns must be between 1 and ${MAX_TURNS_LIMIT}` });
-  }
+interface SelectedRoster {
+  roster: AgentConfig[];
+  finalizerId: string;
+}
 
+/**
+ * Only seat agents that actually have a usable provider right now — an
+ * agent with every provider unconfigured/rate-limited would otherwise just
+ * sit in the roster failing every turn it's dealt. With shared
+ * strength-ordered providers, this naturally grows the committee to as many
+ * roles as providers currently support. Shared by both a fresh plan and a
+ * regenerate — the roster is re-selected each time rather than reused,
+ * since provider availability can shift between the two.
+ */
+function selectRoster(): SelectedRoster | undefined {
   const pool = agentPool();
   const architect = pool.find((a) => a.role === 'architect')!;
-  // Only seat agents that actually have a usable provider right now — an
-  // agent with every provider unconfigured/rate-limited would otherwise
-  // just sit in the roster failing every turn it's dealt. With shared
-  // strength-ordered providers, this naturally grows the committee to as
-  // many roles as providers currently support.
   const roster = pool.filter(isAgentReady);
-  if (roster.length === 0) return sendJson(res, 503, { error: 'no agent has a usable provider right now — check API keys / rate limits' });
+  if (roster.length === 0) return undefined;
   const finalizer = roster.find((a) => a.id === architect.id) ?? roster[0];
+  return { roster, finalizerId: finalizer.id };
+}
 
-  const conversation = createConversation(goal.trim());
-
-  sendJson(res, 202, { conversationId: conversation.id });
-
-  // Fire-and-forget from the HTTP handler's perspective — a conversation
-  // can take a minute or more, so the response above returns immediately
-  // and the client watches progress via the SSE stream instead.
+/**
+ * Fire-and-forget from the HTTP handler's perspective — a conversation can
+ * take a minute or more, so the response above returns immediately and the
+ * client watches progress via the SSE stream instead. Shared by a fresh
+ * plan and a regenerate, which differ only in `sessionOpts`
+ * (initialTranscript/startTurn).
+ */
+function runSessionAndFinalize(
+  conversation: Conversation,
+  roster: AgentConfig[],
+  finalizerId: string,
+  sessionOpts: { maxTurns?: number; initialTranscript?: Message[]; startTurn?: number } = {},
+): void {
   runPlanningSession({
     conversationId: conversation.id,
     goal: conversation.goal,
     agents: roster,
-    finalizerAgentId: finalizer.id,
-    maxTurns,
+    finalizerAgentId: finalizerId,
     pollInjected: drain,
     isStopRequested,
+    isPaused,
+    onPausedChange: (paused) => bus.emitPaused(conversation.id, paused),
     onMessage: (message) => bus.emitMessage(message),
     onThinking: (info) => bus.emitThinking(conversation.id, info),
+    ...sessionOpts,
   })
     .then(async (result) => {
       updateConversationStatus(conversation.id, result.stopped ? 'stopped' : result.finalized ? 'finalized' : 'failed');
@@ -143,8 +154,69 @@ async function handleStartPlan(req: IncomingMessage, res: ServerResponse): Promi
     })
     .finally(() => {
       clearStop(conversation.id);
+      clearPause(conversation.id);
       bus.emitFinalized(conversation.id);
     });
+}
+
+async function handleStartPlan(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  let goal: string | undefined;
+  let maxTurns: number | undefined;
+  try {
+    ({ goal, maxTurns } = JSON.parse(await readBody(req)) as { goal?: string; maxTurns?: number });
+  } catch {
+    return sendJson(res, 400, { error: 'invalid JSON body' });
+  }
+  if (!goal?.trim()) return sendJson(res, 400, { error: 'goal is required' });
+  if (maxTurns !== undefined && (!Number.isFinite(maxTurns) || maxTurns < 1 || maxTurns > MAX_TURNS_LIMIT)) {
+    return sendJson(res, 400, { error: `maxTurns must be between 1 and ${MAX_TURNS_LIMIT}` });
+  }
+
+  const selected = selectRoster();
+  if (!selected) return sendJson(res, 503, { error: 'no agent has a usable provider right now — check API keys / rate limits' });
+  const { roster, finalizerId } = selected;
+
+  const conversation = createConversation(goal.trim());
+
+  sendJson(res, 202, { conversationId: conversation.id });
+
+  generateConversationTitle({ agent: roster[0], goal: conversation.goal })
+    .then((title) => setConversationTitle(conversation.id, title))
+    .catch((err) => console.error('Title generation failed:', err));
+
+  runSessionAndFinalize(conversation, roster, finalizerId, { maxTurns });
+}
+
+async function handleRegenerate(req: IncomingMessage, res: ServerResponse, conversationId: string): Promise<void> {
+  let content: string | undefined;
+  try {
+    ({ content } = JSON.parse(await readBody(req)) as { content?: string });
+  } catch {
+    return sendJson(res, 400, { error: 'invalid JSON body' });
+  }
+  if (!content?.trim()) return sendJson(res, 400, { error: 'content is required' });
+
+  const conversation = getConversation(conversationId);
+  if (!conversation) return sendJson(res, 404, { error: 'not found' });
+  if (conversation.status === 'in_progress') return sendJson(res, 409, { error: 'conversation is already in progress' });
+
+  const selected = selectRoster();
+  if (!selected) return sendJson(res, 503, { error: 'no agent has a usable provider right now — check API keys / rate limits' });
+  const { roster, finalizerId } = selected;
+
+  const startTurn = (getConversationTranscript(conversationId).at(-1)?.turn ?? -1) + 1;
+  // Reuses the same injection-queue the live loop already polls — the new
+  // session's first turn drains and persists this as a normal human
+  // message, no special-casing needed.
+  enqueue(conversationId, content.trim());
+  updateConversationStatus(conversationId, 'in_progress');
+
+  sendJson(res, 202, {});
+
+  runSessionAndFinalize(conversation, roster, finalizerId, {
+    initialTranscript: getConversationTranscript(conversationId),
+    startTurn,
+  });
 }
 
 function handleEvents(req: IncomingMessage, res: ServerResponse, conversationId: string): void {
@@ -174,10 +246,14 @@ function handleEvents(req: IncomingMessage, res: ServerResponse, conversationId:
       res.end();
     }
   });
+  const offPaused = bus.onPaused((id, paused) => {
+    if (id === conversationId) res.write(`event: paused\ndata: ${JSON.stringify({ paused })}\n\n`);
+  });
   req.on('close', () => {
     offMessage();
     offThinking();
     offFinalized();
+    offPaused();
   });
 }
 
@@ -195,6 +271,8 @@ async function handleInject(req: IncomingMessage, res: ServerResponse, conversat
 
   if (conversation.status === 'in_progress') {
     enqueue(conversationId, content.trim());
+    // Sending a message is what un-blocks a paused loop — no separate resume click needed.
+    clearPause(conversationId);
     return sendJson(res, 202, {});
   }
 
@@ -219,6 +297,23 @@ function handleStop(res: ServerResponse, conversationId: string): void {
   if (conversation.status !== 'in_progress') return sendJson(res, 409, { error: 'conversation is not in progress' });
 
   requestStop(conversationId);
+  sendJson(res, 202, {});
+}
+
+function handlePause(res: ServerResponse, conversationId: string): void {
+  const conversation = getConversation(conversationId);
+  if (!conversation) return sendJson(res, 404, { error: 'not found' });
+  if (conversation.status !== 'in_progress') return sendJson(res, 409, { error: 'conversation is not in progress' });
+
+  requestPause(conversationId);
+  sendJson(res, 202, {});
+}
+
+function handleResume(res: ServerResponse, conversationId: string): void {
+  const conversation = getConversation(conversationId);
+  if (!conversation) return sendJson(res, 404, { error: 'not found' });
+
+  clearPause(conversationId);
   sendJson(res, 202, {});
 }
 
@@ -267,7 +362,9 @@ export function startWebServer(port = 3000): Promise<WebServerHandle> {
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost');
 
-    if (req.method === 'GET' && url.pathname === '/') {
+    // The root page and a per-conversation deep link both serve the same
+    // client-routed single-page shell — page.ts parses the path on load.
+    if (req.method === 'GET' && (url.pathname === '/' || /^\/c\/[^/]+$/.test(url.pathname))) {
       res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
       res.end(PAGE_HTML);
       return;
@@ -302,9 +399,24 @@ export function startWebServer(port = 3000): Promise<WebServerHandle> {
       void handleInject(req, res, injectMatch[1]);
       return;
     }
+    const regenerateMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)\/regenerate$/);
+    if (req.method === 'POST' && regenerateMatch) {
+      void handleRegenerate(req, res, regenerateMatch[1]);
+      return;
+    }
     const stopMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)\/stop$/);
     if (req.method === 'POST' && stopMatch) {
       handleStop(res, stopMatch[1]);
+      return;
+    }
+    const pauseMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)\/pause$/);
+    if (req.method === 'POST' && pauseMatch) {
+      handlePause(res, pauseMatch[1]);
+      return;
+    }
+    const resumeMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)\/resume$/);
+    if (req.method === 'POST' && resumeMatch) {
+      handleResume(res, resumeMatch[1]);
       return;
     }
     const getMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)$/);
