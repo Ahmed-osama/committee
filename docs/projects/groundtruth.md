@@ -243,6 +243,16 @@ on the listing detail page as an average EGP/sqm figure + deal count when a matc
 exists for that listing's own cell. See `apps/web/CLAUDE.md`'s "Valuation engine"
 section. Next up: COM-24 (admin anti-gaming/moderation dashboard).
 
+COM-24 done: admin anti-gaming & moderation dashboard. `(admin)/admin` is a second,
+sibling root layout to `(site)/[locale]`, deliberately unlocalized (no `next-intl`),
+gated via COM-18's `requireAdminSession()`. Shows three read-only review lists:
+rejected KYC submissions, buyers with unusually high negotiation activity and zero
+closed deals, and closed deals priced far from their COM-23 valuation cell — all pure
+heuristics (`lib/admin/flags.ts`, unit-tested) over existing data, no new tracking/
+schema. Nothing here takes action automatically; see `apps/web/CLAUDE.md`'s "Admin
+anti-gaming & moderation dashboard" section. Next up: COM-25 (Arabic UI copy pass —
+this dashboard is explicitly excluded from it).
+
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
 tracked as tripwires per the roadmap table above.

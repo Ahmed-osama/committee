@@ -283,6 +283,32 @@ smoke test, not just a clean typecheck.
   `(zone, propertyType, areaSqm)` cell; renders nothing at all when suppressed.
 - Validated the underlying join query directly against local Postgres.
 
+## Admin anti-gaming & moderation dashboard (COM-24)
+- `src/app/(admin)/admin/` — a second, sibling root layout to `(site)/[locale]/`, per
+  the route-group split noted under "i18n / RTL" above. Deliberately English-only, no
+  `next-intl` at all (COM-25's Arabic pass explicitly excludes it — this is internal
+  tooling, not end-user-facing). `src/proxy.ts`'s matcher already excludes `/admin`.
+  Gated via `requireAdminSession()` (COM-18) — shows a plain "Not authorized." for
+  anyone else, no self-serve path to get admin (unchanged from COM-18).
+- `src/lib/admin/flags.ts` — pure heuristics (no DB access), unit-tested: (1) a buyer
+  with `>= SUSPICIOUS_NEGOTIATION_COUNT_THRESHOLD` negotiations and zero closed deals
+  (shape of a broker "testing the market" with fabricated buyer interest, or a
+  sockpuppet inflating apparent demand); (2) a closed deal priced more than
+  `PRICE_OUTLIER_RATIO` away from its valuation cell's (COM-23) average EGP/sqm
+  (shape of a fabricated deal skewing the valuation signal itself) — only ever applied
+  against a cell that already has an established valuation. Both thresholds are
+  starting points pending real usage data, not tuned.
+- `src/lib/admin/moderation.ts` — the DB-backed queries behind those heuristics, plus
+  a third, simpler list: rejected KYC submissions (COM-18) for manual re-review.
+  Read-only reporting only — nothing here auto-suspends or auto-delists an account;
+  a human reviews and decides, consistent with this product's general preference for
+  a human decision point over silent automation (see the audience section's staffed
+  phone-fallback note for the same philosophy elsewhere).
+- Validated the dashboard's underlying `GROUP BY`/join queries directly against local
+  Postgres, and the route itself via a dev-server smoke test (confirms Next's
+  multiple-root-layouts support actually works for this `(admin)`/`(site)` split, not
+  just typechecks).
+
 ## Conventions specific to this app
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise
   auto-generates/overwrites `AGENTS.md`/`CLAUDE.md` in this directory on every run, which
