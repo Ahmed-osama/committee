@@ -1,7 +1,7 @@
 import { db, kycVerifications } from '@committee/db';
 import { desc, eq } from 'drizzle-orm';
-import { isEgyptianNationalId } from './national-id.js';
-import { kycProvider } from './providers.js';
+import { isEgyptianNationalId } from './national-id';
+import { kycProvider } from './providers';
 
 export class InvalidNationalIdError extends Error {}
 

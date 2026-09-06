@@ -43,6 +43,33 @@ Uses `@committee/db` (`packages/db`) rather than talking to Postgres directly. S
 package's notes on the two exported clients (`db` for normal reads/writes, `pooledDb` for
 future transactional writes) before adding a new query.
 
+## Bundler quirk: workspace packages + NodeNext `.js` imports (COM-17)
+`packages/db` and `packages/auth-providers` are consumed as raw TypeScript source
+(`main`/`exports` point straight at `src/index.ts`, no build step — the same pattern
+`packages/core` uses for `apps/cli`/`apps/digest`). Their own internal relative imports
+use NodeNext-style `./foo.js` specifiers, which is *required* for `tsc`
+(`moduleResolution: NodeNext`) and for `node --import tsx` (their `db:migrate`/test
+scripts) to resolve them — but neither Turbopack nor plain webpack remaps `.js` to the
+real `.ts` file for a workspace package's own internal imports by default. Turbopack
+also showed genuinely nondeterministic "Module not found" errors across otherwise-
+identical requests while debugging this (not just a one-time cold-start miss), so this
+repo pins `apps/web`'s `dev`/`build` scripts to `next dev --webpack` / `next build
+--webpack` rather than Turbopack (the Next 16 default) until Turbopack supports the
+equivalent of webpack's `resolve.extensionAlias`. `next.config.js` sets both
+`transpilePackages` (so these packages go through Next's own compiler instead of being
+treated as opaque `node_modules`) and `webpack(config) { config.resolve.extensionAlias
+= { '.js': ['.ts', '.tsx', '.js'] } }` (so the `.js` specifier actually resolves to the
+`.ts` file). **If a route touching `@committee/db` or `@committee/auth-providers` 500s
+with "Module not found: Can't resolve './something.js'"**, this is almost certainly
+the same class of issue recurring — check that `transpilePackages` still lists the
+package and that `--webpack` hasn't been dropped from the dev/build scripts, and don't
+re-attempt Turbopack without adding an equivalent extension-remapping mechanism first.
+This was invisible to `pnpm run typecheck`/`lint` (CI only runs those, not `next
+build`) — it only surfaces by actually booting the dev server and hitting a route that
+imports one of these packages, which is why every issue that touches a new
+`@committee/db`/`@committee/auth-providers` import path should get an actual dev-server
+smoke test, not just a clean typecheck.
+
 ## Auth, KYC & compliance (COM-18)
 - `src/lib/auth/providers.ts` — module-level `otpProvider`/`kycProvider` singletons,
   currently `@committee/auth-providers`' mocks. This is the one place a real vendor
@@ -75,10 +102,40 @@ future transactional writes) before adding a new query.
 - Route handlers live at `src/app/api/**` — outside `[locale]` (API routes don't need
   i18n) but still sibling to `(site)`/`(admin)`, so this doesn't conflict with the
   route-group root-layout split described above.
-- COM-17 (listings) depends on this: listing creation requires an authenticated,
-  KYC-submitted seller — never allow anonymous listing creation, that's the collusion
-  vector the whole KYC/OTP stack exists to close (see `docs/projects/groundtruth.md`'s
-  anti-collusion mechanism).
+- COM-17 (listings) depends on this: listing creation requires an authenticated seller
+  with an **approved** KYC verification (not merely submitted) — never allow anonymous
+  listing creation, that's the collusion vector the whole KYC/OTP stack exists to close
+  (see `docs/projects/groundtruth.md`'s anti-collusion mechanism).
+
+## Listings (COM-17)
+- `src/lib/listings/validation.ts` — pure shape/range validation (`validateListingInput`),
+  shared by the create-listing Server Action and the `/api/listings` route so both reject
+  bad input the same way. `LISTING_TYPES` is the single source of truth for the
+  `listingTypeEnum` values — keep it in sync with `packages/db/src/schema.ts` by hand
+  (Drizzle's pg enum doesn't export its value list back out in a form worth importing).
+- `src/lib/listings/listings.ts` — `createListing` calls `requireKycApprovedSeller` itself
+  (not just at the route layer), so it's safe to call from anywhere, including a future
+  admin tool, without re-deriving the gate. `listActiveListings` only ever returns
+  `status: 'active'` rows — there's no seller dashboard yet for viewing/archiving your own
+  listings regardless of status, that's a follow-up, not this issue's scope.
+- Photos: `POST /api/listings/[id]/photos` (multipart) stores to the **public** upload
+  bucket (`saveUploadedFile(..., 'public')`) and serves back through
+  `src/app/photos/[filename]/route.ts` — no auth required to view, since browsing a
+  listing never requires login. This is the opposite visibility of KYC uploads (COM-18),
+  which use the **private** bucket and `src/app/uploads/[filename]/route.ts`. Getting
+  these two buckets/routes crossed would either leak private KYC documents publicly or
+  break public listing photo display — check `visibility` at every `saveUploadedFile`/
+  `resolveUploadPath` call site if you touch either flow.
+- Pages: `(site)/[locale]/listings` (browse, `force-dynamic` — see the bundler-quirk note
+  above on why: no DB credentials at `next build` time in this repo),
+  `(site)/[locale]/listings/[id]` (detail, same), `(site)/[locale]/listings/new`
+  (create — a plain `<form action={serverAction}>`, no client JS). `(site)/[locale]/login`
+  is a client component (two-step OTP: phone → code) since it needs to call
+  `/api/auth/otp/*` interactively; everything else in this issue stays server-rendered.
+- Known gap: validation/authorization errors from the create-listing Server Action
+  currently surface via Next's default error boundary rather than an inline form
+  message — a friendlier UX pass is a follow-up, not blocking for a first working,
+  correctly-gated create flow.
 
 ## Conventions specific to this app
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise

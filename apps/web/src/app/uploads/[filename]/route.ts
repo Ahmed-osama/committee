@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
   }
 
   const { filename } = await params;
-  const filePath = resolveUploadPath(filename);
+  const filePath = resolveUploadPath(filename, 'private');
   if (!filePath) {
     return NextResponse.json({ error: 'invalid filename' }, { status: 400 });
   }

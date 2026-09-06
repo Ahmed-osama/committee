@@ -1,8 +1,8 @@
 import { db, otpRequests, users } from '@committee/db';
 import { eq } from 'drizzle-orm';
-import { isEgyptianE164Phone } from './phone.js';
-import { otpProvider } from './providers.js';
-import type { SessionPayload } from './session.js';
+import { isEgyptianE164Phone } from './phone';
+import { otpProvider } from './providers';
+import type { SessionPayload } from './session';
 
 export class InvalidPhoneError extends Error {}
 export class InvalidOtpRequestError extends Error {}

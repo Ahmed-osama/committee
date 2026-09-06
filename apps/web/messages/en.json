@@ -5,6 +5,41 @@
   },
   "HomePage": {
     "title": "GroundTruth",
-    "description": "Scaffolding in progress — see docs/projects/groundtruth.md."
+    "description": "Scaffolding in progress — see docs/projects/groundtruth.md.",
+    "browseListings": "Browse listings"
+  },
+  "Login": {
+    "title": "Sign in",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "+201001234567",
+    "sendCode": "Send code",
+    "codeLabel": "Code",
+    "verifyCode": "Verify",
+    "sendError": "Couldn't send the code. Check the number and try again.",
+    "verifyError": "Incorrect code. Try again.",
+    "success": "Signed in."
+  },
+  "Listings": {
+    "browseTitle": "Listings",
+    "empty": "No listings yet.",
+    "newListing": "New listing",
+    "priceLabel": "Price",
+    "areaLabel": "Area",
+    "zoneLabel": "Zone",
+    "typeLabel": "Type",
+    "type": {
+      "apartment": "Apartment",
+      "house": "House",
+      "land": "Land",
+      "commercial": "Commercial"
+    },
+    "detailNotFound": "This listing isn't available.",
+    "backToListings": "Back to listings",
+    "createTitle": "New listing",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "submit": "Publish listing",
+    "signInToCreate": "Sign in to publish a listing.",
+    "kycRequired": "Your ID verification must be approved before you can publish a listing."
   }
 }

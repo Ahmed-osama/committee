@@ -23,8 +23,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const [storedDocument, storedSelfie] = await Promise.all([
-    saveUploadedFile(new Uint8Array(await document.arrayBuffer()), document.name),
-    saveUploadedFile(new Uint8Array(await selfie.arrayBuffer()), selfie.name),
+    saveUploadedFile(new Uint8Array(await document.arrayBuffer()), document.name, 'private'),
+    saveUploadedFile(new Uint8Array(await selfie.arrayBuffer()), selfie.name, 'private'),
   ]);
 
   try {

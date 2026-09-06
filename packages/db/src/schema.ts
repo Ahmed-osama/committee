@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 
@@ -42,4 +42,38 @@ export const kycVerifications = pgTable('kyc_verifications', {
   rejectionReason: text('rejection_reason'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const listingTypeEnum = pgEnum('listing_type', ['apartment', 'house', 'land', 'commercial']);
+export const listingStatusEnum = pgEnum('listing_status', ['active', 'archived']);
+
+// `zone` is a free-text micro-zone label for now (matches the founder's manual,
+// one-micro-zone-at-a-time rollout — see docs/projects/groundtruth.md's go-to-market
+// plan) rather than a geocoded region; a real zone taxonomy is a later enhancement.
+// `priceEgp`/`areaSqm` are plain integers (whole EGP / whole square meters) —
+// sufficient precision for MVP listings, avoids numeric-as-string friction in Drizzle.
+export const listings = pgTable('listings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sellerId: uuid('seller_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  zone: text('zone').notNull(),
+  propertyType: listingTypeEnum('property_type').notNull(),
+  areaSqm: integer('area_sqm').notNull(),
+  priceEgp: integer('price_egp').notNull(),
+  status: listingStatusEnum('status').notNull().default('active'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const listingPhotos = pgTable('listing_photos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  listingId: uuid('listing_id')
+    .notNull()
+    .references(() => listings.id, { onDelete: 'cascade' }),
+  url: text('url').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

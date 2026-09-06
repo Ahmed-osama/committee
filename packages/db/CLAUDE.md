@@ -6,7 +6,13 @@ Drizzle/Postgres client for GroundTruth, wired to Neon. Consumed as `@committee/
 - `src/schema.ts` — Drizzle table definitions. `users` (phone, role), `otp_requests`
   (keyed by the OtpProvider's own requestId), and `kyc_verifications` (FK-cascades from
   `users`) landed with COM-18 — see `apps/web/src/lib/auth/` for the flows that write
-  them and `apps/web/CLAUDE.md` for the auth/KYC subsystem writeup.
+  them and `apps/web/CLAUDE.md` for the auth/KYC subsystem writeup. `listings` and
+  `listing_photos` (both FK-cascade from their parent) landed with COM-17 — see
+  `apps/web/src/lib/listings/`.
+- `src/index.ts` re-exports schema tables/enums **by name**, not `export * from
+  './schema.js'` — apps/web's bundler (see its CLAUDE.md's "Bundler quirk" note)
+  didn't reliably propagate a wildcard re-export's names when consuming this package.
+  Add new schema exports to both `schema.ts` and the explicit list in `index.ts`.
 - `src/client.ts` — exports two clients, both built off `DATABASE_URL` (the pooled,
   pgbouncer-fronted connection string):
   - `db` (`drizzle-orm/neon-http`) — the default for normal reads/writes. One query per

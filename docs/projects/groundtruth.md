@@ -168,8 +168,27 @@ user via `pooledDb.transaction(...)` — the first real use of the pooled-client
 instance (insert/cascade-delete exercised directly); the Neon serverless HTTP driver
 itself still needs a real Neon endpoint or local proxy to fully exercise, consistent with
 what `apps/web/README.md` already notes about local-Postgres fallback. See
-`apps/web/CLAUDE.md`'s "Auth, KYC & compliance" section for the full breakdown. Next up
-per the roadmap: COM-17 (listings), which requires an authenticated, KYC-submitted seller.
+`apps/web/CLAUDE.md`'s "Auth, KYC & compliance" section for the full breakdown.
+
+COM-17 done: listing creation (`POST /api/listings` + `(site)/[locale]/listings/new`,
+gated on an authenticated seller with an **approved** KYC verification, not merely
+submitted), photo upload (public bucket, `/api/listings/[id]/photos`), and public
+browse/detail pages (`(site)/[locale]/listings`, `.../listings/[id]` — no login
+required). A minimal client-side login page (`(site)/[locale]/login`, two-step OTP)
+was also added since it's needed to exercise the create flow at all. Found and fixed a
+real bundler bug along the way: neither Turbopack nor webpack remapped
+`packages/db`/`packages/auth-providers`'s NodeNext-style `./foo.js` internal imports to
+their real `.ts` files by default, so any route touching those packages 500'd with
+"Module not found" — invisible to `pnpm run typecheck`/`lint` (CI doesn't run `next
+build`), only caught by actually booting the dev server. Fixed via `transpilePackages`
++ a webpack `resolve.extensionAlias`, with `apps/web` now pinned to `next dev/build
+--webpack` since Turbopack (Next 16's default) has no equivalent option and was also
+nondeterministic while debugging this — see `apps/web/CLAUDE.md`'s "Bundler quirk"
+section, which flags this as a recurring-risk area for any future issue that adds a new
+`@committee/db`/`@committee/auth-providers` import path. Schema/migration validated
+against local Postgres directly; full request-level exercise against a real Postgres
+still blocked on the same Neon-serverless-driver-needs-a-real-endpoint limitation noted
+under COM-18. Next up per the roadmap: COM-19 (offer/negotiation state machine).
 
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
