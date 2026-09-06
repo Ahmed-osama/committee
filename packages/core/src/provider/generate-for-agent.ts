@@ -7,6 +7,16 @@ import { selectProvider } from './provider-router.js';
 export interface GenerateForAgentOptions {
   /** Lets a multi-step tool loop (e.g. execution turns) run several tool calls before stopping. */
   stopWhen?: Parameters<typeof generateText>[0]['stopWhen'];
+  /**
+   * Defaults to 'auto', which lets the model choose prose over a tool call
+   * even when a tool is offered — observed in practice as agents writing
+   * "finalize_plan" or "I agree" as plain text instead of invoking the
+   * actual tool, stalling a conversation until it exhausts its turn budget.
+   * Pass this to force a specific tool when the caller has already decided
+   * that's the only valid next action (e.g. the finalizer once the skeptic
+   * has genuinely agreed) rather than leaving it up to the model's whim.
+   */
+  toolChoice?: Parameters<typeof generateText>[0]['toolChoice'];
 }
 
 /**

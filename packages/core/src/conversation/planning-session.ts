@@ -42,6 +42,14 @@ export interface PlanningSessionOptions {
   pollInjected?: (conversationId: string) => string[];
   /** Checked at the top of each turn — if true, the loop stops before that turn runs. */
   isStopRequested?: (conversationId: string) => boolean;
+  /** Checked at the top of each turn — while true, the loop blocks before that turn runs instead of ending. */
+  isPaused?: (conversationId: string) => boolean;
+  /** Fired when the loop starts/stops blocking on `isPaused`, so a live viewer can show a waiting-for-human state. */
+  onPausedChange?: (paused: boolean) => void;
+  /** Prior turns to seed the prompt with — used when reopening a finalized conversation rather than starting fresh. */
+  initialTranscript?: Message[];
+  /** Turn number to persist new messages from, continuing on from a prior session's transcript instead of 0. */
+  startTurn?: number;
 }
 
 export interface PlanningSessionResult {
@@ -63,6 +71,14 @@ const DEFAULT_MAX_TURNS = 36;
  * the deliberation real rather than a formality.
  */
 const MIN_SKEPTIC_CHALLENGES = 2;
+
+/**
+ * Fraction of maxTurns after which the debate is told to start wrapping up.
+ * Without this, a conversation can spend its whole budget on open-ended
+ * back-and-forth and hit the wall with no plan at all — pressure to close
+ * needs to start before the last turn, not at it.
+ */
+const CLOSING_PHASE_FRACTION = 0.75;
 
 function formatTranscript(transcript: Message[], agents: AgentConfig[]): string {
   const nameFor = (id: string) => (id === HUMAN_AGENT_ID ? 'You' : (agents.find((a) => a.id === id)?.name ?? id));
@@ -114,9 +130,27 @@ function intentForRole(role: AgentRole): Message['intent'] {
  * issues doesn't need another LLM call, it needs code that reliably does
  * the same thing every time.
  */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function runPlanningSession(opts: PlanningSessionOptions): Promise<PlanningSessionResult> {
-  const { conversationId, goal, agents, finalizerAgentId, maxTurns = DEFAULT_MAX_TURNS, onMessage, onThinking, pollInjected, isStopRequested } = opts;
-  const transcript: Message[] = [];
+  const {
+    conversationId,
+    goal,
+    agents,
+    finalizerAgentId,
+    maxTurns = DEFAULT_MAX_TURNS,
+    onMessage,
+    onThinking,
+    pollInjected,
+    isStopRequested,
+    isPaused,
+    onPausedChange,
+    initialTranscript = [],
+    startTurn = 0,
+  } = opts;
+  const transcript: Message[] = [...initialTranscript];
   const skeptic = agents.find((a) => a.role === 'skeptic');
   let plan: FinalizedPlan | undefined;
   let agreementNote: string | undefined;
@@ -145,16 +179,31 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
   for (let turn = 0; turn < maxTurns; turn++) {
     if (isStopRequested?.(conversationId)) return { finalized: false, turnsUsed: turn, stopped: true };
 
+    if (isPaused?.(conversationId)) {
+      onPausedChange?.(true);
+      while (isPaused?.(conversationId)) {
+        if (isStopRequested?.(conversationId)) return { finalized: false, turnsUsed: turn, stopped: true };
+        await sleep(500);
+      }
+      onPausedChange?.(false);
+    }
+
     for (const content of pollInjected?.(conversationId) ?? []) {
-      const injected = sendMessage({ conversationId, fromAgentId: HUMAN_AGENT_ID, intent: 'human', content, turn });
+      const injected = sendMessage({ conversationId, fromAgentId: HUMAN_AGENT_ID, intent: 'human', content, turn: startTurn + turn });
       transcript.push(injected);
       onMessage?.(injected);
     }
 
+    // Only this round's messages count toward the skeptic's agreement/challenge state — a
+    // regenerated session's seeded `initialTranscript` can include a stale `agree` from before
+    // the human's new feedback, which must not let the finalizer close again without any new debate.
+    const currentRound = transcript.filter((m) => m.turn >= startTurn);
+
     const agent = agents[turn % agents.length];
     const isSkeptic = agent.id === skeptic?.id;
-    const canSkepticAgreeYet = countSkepticChallenges(transcript, skeptic?.id) >= MIN_SKEPTIC_CHALLENGES;
-    const isFinalizer = agent.id === finalizerAgentId && canOfferFinalize(turn, agents.length) && hasSkepticAgreed(transcript, skeptic?.id);
+    const isClosingPhase = turn >= Math.floor(maxTurns * CLOSING_PHASE_FRACTION);
+    const canSkepticAgreeYet = isClosingPhase || countSkepticChallenges(currentRound, skeptic?.id) >= MIN_SKEPTIC_CHALLENGES;
+    const isFinalizer = agent.id === finalizerAgentId && canOfferFinalize(turn, agents.length) && hasSkepticAgreed(currentRound, skeptic?.id);
     const tools: ToolSet = isFinalizer ? { finalize_plan: finalizeTool } : isSkeptic && canSkepticAgreeYet ? { agree: agreeTool } : {};
 
     const promptParts = [
@@ -166,10 +215,15 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
       `Now speak as ${agent.name}. A few sentences, no filler.` +
         (isFinalizer ? ' If the plan is genuinely settled, call finalize_plan instead of speaking.' : '') +
         (isSkeptic && canSkepticAgreeYet
-          ? ' If you have no further real objections, call agree instead of speaking.'
+          ? isClosingPhase
+            ? ' The debate is nearing its turn limit. Agree now unless there is a genuinely critical, unresolved issue — do not raise new minor objections at this stage.'
+            : ' If you have no further real objections, call agree instead of speaking.'
           : isSkeptic
             ? ' Raise a real, concrete objection — you have not stress-tested this enough yet to agree.'
-            : ''),
+            : '') +
+        (isClosingPhase && !isSkeptic && !isFinalizer
+          ? ' The debate is nearing its turn limit — help converge rather than opening new threads.'
+          : ''),
     ];
 
     let preview: ProviderSelection | undefined;
@@ -180,9 +234,27 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
     }
     onThinking?.({ agentId: agent.id, name: agent.name, role: agent.role, providerId: preview?.providerId, modelId: preview?.modelId });
 
+    // Once the skeptic has genuinely agreed, the finalizer's only sanctioned action left is to
+    // finalize — there's nothing legitimately still up for debate at that point. Forcing the tool
+    // choice here (rather than leaving the model free to respond with prose instead) is what
+    // actually fixes the observed stall: agents repeatedly writing "finalize_plan" or "I agree" as
+    // plain text instead of calling the tool, burning the whole turn budget without ever finalizing.
+    //
+    // The skeptic gets the same treatment once deep in the closing phase: hasSkepticAgreed only
+    // looks at the skeptic's *last* message, so a post-agreement turn that lapses back into prose
+    // (rather than calling agree again) silently un-agrees it and strips the finalizer of its own
+    // eligibility next round — an oscillation that never resolves on its own. The closing-phase
+    // prompt already tells the skeptic to agree absent a genuinely critical objection; forcing the
+    // tool here just makes that instruction actually binding instead of advisory.
+    const forceToolChoice = isFinalizer
+      ? ({ type: 'tool', toolName: 'finalize_plan' } as const)
+      : isSkeptic && canSkepticAgreeYet && isClosingPhase
+        ? ({ type: 'tool', toolName: 'agree' } as const)
+        : undefined;
+
     let generated: Awaited<ReturnType<typeof generateForAgent>>;
     try {
-      generated = await generateForAgent(agent, promptParts.join('\n\n'), tools);
+      generated = await generateForAgent(agent, promptParts.join('\n\n'), tools, { toolChoice: forceToolChoice });
     } catch (err) {
       // Every configured provider for this agent is exhausted or down right
       // now — skip its turn rather than aborting the whole conversation;
@@ -193,7 +265,7 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
         fromAgentId: agent.id,
         intent: 'error',
         content: `${agent.name} couldn't respond this turn: ${err instanceof Error ? err.message : String(err)}`,
-        turn,
+        turn: startTurn + turn,
       });
       transcript.push(message);
       onMessage?.(message);
@@ -211,17 +283,61 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
     });
 
     if (plan) {
-      const message = sendMessage({ conversationId, fromAgentId: agent.id, intent: 'finalize', content: plan.summary, payload: plan, providerId, modelId, turn });
+      const message = sendMessage({ conversationId, fromAgentId: agent.id, intent: 'finalize', content: plan.summary, payload: plan, providerId, modelId, turn: startTurn + turn });
       onMessage?.(message);
       return { finalized: true, plan, turnsUsed: turn + 1 };
     }
 
     const content = agreementNote ?? (result.text.trim() || '(no response this turn)');
     const intent: Message['intent'] = agreementNote !== undefined ? 'agree' : intentForRole(agent.role);
-    const message = sendMessage({ conversationId, fromAgentId: agent.id, intent, content, providerId, modelId, turn });
+    const message = sendMessage({ conversationId, fromAgentId: agent.id, intent, content, providerId, modelId, turn: startTurn + turn });
     transcript.push(message);
     onMessage?.(message);
     agreementNote = undefined;
+  }
+
+  // The debate exhausted its turn budget without the skeptic ever clearing
+  // finalization. Rather than surface "no plan" after a potentially long,
+  // costly conversation, force the finalizer to commit to a best-effort plan
+  // from whatever was actually discussed — a landed imperfect plan is more
+  // useful than none, and the transcript is preserved either way.
+  const finalizer = agents.find((a) => a.id === finalizerAgentId);
+  if (finalizer) {
+    const promptParts = [
+      finalizer.systemPrompt,
+      `The goal: ${goal}`,
+      `Conversation so far:\n\n${formatTranscript(transcript, agents)}`,
+      'The debate has reached its turn limit without formal agreement. Call finalize_plan now with the best plan supported by the discussion so far — do not speak, do not ask for more discussion.',
+    ];
+
+    let preview: ProviderSelection | undefined;
+    try {
+      preview = selectProvider(finalizer);
+    } catch {
+      // no usable provider right now — the thinking notice just omits the provider badge
+    }
+    onThinking?.({ agentId: finalizer.id, name: finalizer.name, role: finalizer.role, providerId: preview?.providerId, modelId: preview?.modelId });
+
+    try {
+      const { result, providerId, modelId } = await generateForAgent(finalizer, promptParts.join('\n\n'), { finalize_plan: finalizeTool }, {
+        toolChoice: { type: 'tool', toolName: 'finalize_plan' },
+      });
+      recordProviderCall({
+        agentId: finalizer.id,
+        providerId,
+        modelId,
+        inputTokens: result.usage.inputTokens ?? 0,
+        outputTokens: result.usage.outputTokens ?? 0,
+        costUsd: computeCostUsd(providerId, modelId, result.usage.inputTokens ?? 0, result.usage.outputTokens ?? 0),
+      });
+      if (plan) {
+        const message = sendMessage({ conversationId, fromAgentId: finalizer.id, intent: 'finalize', content: plan.summary, payload: plan, providerId, modelId, turn: startTurn + maxTurns });
+        onMessage?.(message);
+        return { finalized: true, plan, turnsUsed: maxTurns + 1 };
+      }
+    } catch {
+      // provider unavailable for the forced attempt too — fall through to reporting no plan
+    }
   }
 
   return { finalized: false, turnsUsed: maxTurns };
