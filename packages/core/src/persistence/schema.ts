@@ -13,6 +13,7 @@ export const agents = sqliteTable('agents', {
 export const conversations = sqliteTable('conversations', {
   id: text('id').primaryKey(),
   goal: text('goal').notNull(),
+  title: text('title'),
   status: text('status').notNull(),
   linearEpicUrl: text('linear_epic_url'),
   planVisualSvg: text('plan_visual_svg'),

@@ -23,6 +23,14 @@ export function updateConversationStatus(id: string, status: ConversationStatus,
   return updated;
 }
 
+export function setConversationTitle(id: string, title: string): Conversation {
+  const existing = getConversation(id);
+  if (!existing) throw new Error(`Conversation not found: ${id}`);
+  const updated: Conversation = { ...existing, title, updatedAt: new Date().toISOString() };
+  db.update(conversations).set(updated).where(eq(conversations.id, id)).run();
+  return updated;
+}
+
 export function setConversationPlanVisual(id: string, planVisualSvg: string): Conversation {
   const existing = getConversation(id);
   if (!existing) throw new Error(`Conversation not found: ${id}`);
