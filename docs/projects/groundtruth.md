@@ -156,8 +156,20 @@ detection (Next 16's `middleware.ts` → `proxy.ts` rename), `dir="rtl"` driven 
 `RTL_LOCALES` set. `messages/en.json` is the source of truth; `messages/ar.json` mirrors
 it verbatim as a placeholder pending COM-25's real translation pass. The `(site)` route
 group exists specifically so COM-24's `/admin` can be a sibling unlocalized root layout
-later — see `apps/web/CLAUDE.md`. Next up per the roadmap: COM-18 (auth/KYC), which COM-17
-(listings) depends on for authenticated sellers.
+later — see `apps/web/CLAUDE.md`.
+
+COM-18 done: phone OTP registration/login (`/api/auth/otp/{send,verify}`), KYC doc/selfie
+submission (`/api/kyc/submit`, stored on local disk pending a real object-storage vendor —
+verification itself is stubbed via `@committee/auth-providers`'s mock, not a real KYC
+vendor call), a signed session cookie, admin role gating (`role` column +
+`requireAdminSession()`), and data-deletion rights (`/api/account/delete`, hard-deletes a
+user via `pooledDb.transaction(...)` — the first real use of the pooled-client split
+`packages/db/CLAUDE.md` documents). Schema + migration validated against a local Postgres
+instance (insert/cascade-delete exercised directly); the Neon serverless HTTP driver
+itself still needs a real Neon endpoint or local proxy to fully exercise, consistent with
+what `apps/web/README.md` already notes about local-Postgres fallback. See
+`apps/web/CLAUDE.md`'s "Auth, KYC & compliance" section for the full breakdown. Next up
+per the roadmap: COM-17 (listings), which requires an authenticated, KYC-submitted seller.
 
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,

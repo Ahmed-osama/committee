@@ -43,6 +43,43 @@ Uses `@committee/db` (`packages/db`) rather than talking to Postgres directly. S
 package's notes on the two exported clients (`db` for normal reads/writes, `pooledDb` for
 future transactional writes) before adding a new query.
 
+## Auth, KYC & compliance (COM-18)
+- `src/lib/auth/providers.ts` — module-level `otpProvider`/`kycProvider` singletons,
+  currently `@committee/auth-providers`' mocks. This is the one place a real vendor
+  adapter (once the founder picks one — see `docs/projects/groundtruth-vendor-spike.md`)
+  gets swapped in; nothing else should import `@committee/auth-providers` directly.
+- `src/lib/auth/otp-flow.ts` — `requestOtp`/`verifyOtp`. Registration and login are the
+  same flow (a verified phone either matches an existing user or creates one) — no
+  separate signup step. `MockOtpProvider`'s in-memory state is process-local, so this
+  only works correctly as one long-lived server instance (local dev today); a real
+  vendor adapter has no such constraint.
+- `src/lib/auth/kyc-flow.ts` — `submitKyc`/`getLatestKycStatus`. The mock provider
+  resolves to `'approved'` synchronously; a real vendor is async (webhook-driven), so
+  `submitKyc`'s immediate status read is a stand-in for that, not the final design.
+- `src/lib/auth/delete-account.ts` — data-deletion-rights: hard-deletes a user and
+  everything tied to them via `pooledDb.transaction(...)`, not `db` — `otp_requests` has
+  no FK to `users` (it's keyed by phone, written before a user row exists), so deleting
+  both together needs a real multi-statement transaction. This is the first concrete use
+  of the `pooledDb` split documented in `packages/db/CLAUDE.md`.
+- `src/lib/storage/local-file-storage.ts` — KYC document/selfie uploads land on local
+  disk under `apps/web/.data/uploads` (gitignored). **Not production storage** — replace
+  with a real object storage vendor before deploying; see the `TODO(human)` in that file.
+  Served back through `src/app/uploads/[filename]/route.ts`, gated behind any
+  authenticated session (filenames are unguessable UUIDs, but that's not a substitute for
+  real per-owner authorization).
+- `src/app/api/_lib/session.ts` — cookie-backed session (HMAC-signed, see
+  `src/lib/auth/session.ts` for the signing itself) plus `requireAdminSession()` for
+  admin-only routes. `SESSION_SECRET` (`.env.example`) must be a real random value per
+  environment. There's no self-serve path to the `'admin'` role — promoting a user is a
+  manual DB update until an invite flow exists (intentionally out of MVP scope).
+- Route handlers live at `src/app/api/**` — outside `[locale]` (API routes don't need
+  i18n) but still sibling to `(site)`/`(admin)`, so this doesn't conflict with the
+  route-group root-layout split described above.
+- COM-17 (listings) depends on this: listing creation requires an authenticated,
+  KYC-submitted seller — never allow anonymous listing creation, that's the collusion
+  vector the whole KYC/OTP stack exists to close (see `docs/projects/groundtruth.md`'s
+  anti-collusion mechanism).
+
 ## Conventions specific to this app
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise
   auto-generates/overwrites `AGENTS.md`/`CLAUDE.md` in this directory on every run, which

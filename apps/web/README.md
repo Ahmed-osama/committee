@@ -10,7 +10,7 @@ From the repo root:
 
 ```
 pnpm install
-cp .env.example .env   # fill in DATABASE_URL / DATABASE_URL_UNPOOLED, see below
+cp .env.example .env   # fill in DATABASE_URL / DATABASE_URL_UNPOOLED / SESSION_SECRET, see below
 pnpm db:generate        # regenerate packages/db/migrations after a schema change
 pnpm db:migrate         # apply migrations (needs a real Postgres — see provisioning below)
 pnpm --filter @committee/web dev
@@ -18,7 +18,10 @@ pnpm --filter @committee/web dev
 
 `pnpm dev` boots at http://localhost:3000 and renders a placeholder page — no database
 connection is required just to boot the app; `DATABASE_URL`/`DATABASE_URL_UNPOOLED` are
-only needed once a route actually queries `@committee/db`.
+only needed once a route actually queries `@committee/db` (e.g. any `/api/auth/*`,
+`/api/kyc/*`, `/api/account/*` route — see `apps/web/CLAUDE.md`'s auth/KYC section).
+`SESSION_SECRET` is required by those same routes (session cookie signing) — generate a
+real random value per environment, never reuse the `.env.example` placeholder.
 
 ## Provisioning Neon + Vercel (manual, one-time)
 

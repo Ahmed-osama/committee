@@ -3,8 +3,10 @@
 Drizzle/Postgres client for GroundTruth, wired to Neon. Consumed as `@committee/db`.
 
 ## Layout
-- `src/schema.ts` — Drizzle table definitions. `users` is currently a placeholder proving
-  the migration pipeline works; real auth/KYC fields land with COM-18.
+- `src/schema.ts` — Drizzle table definitions. `users` (phone, role), `otp_requests`
+  (keyed by the OtpProvider's own requestId), and `kyc_verifications` (FK-cascades from
+  `users`) landed with COM-18 — see `apps/web/src/lib/auth/` for the flows that write
+  them and `apps/web/CLAUDE.md` for the auth/KYC subsystem writeup.
 - `src/client.ts` — exports two clients, both built off `DATABASE_URL` (the pooled,
   pgbouncer-fronted connection string):
   - `db` (`drizzle-orm/neon-http`) — the default for normal reads/writes. One query per
