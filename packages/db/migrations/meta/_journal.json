@@ -22,6 +22,13 @@
       "when": 1788712162482,
       "tag": "0002_public_komodo",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788727194687,
+      "tag": "0003_graceful_vengeance",
+      "breakpoints": true
     }
   ]
 }

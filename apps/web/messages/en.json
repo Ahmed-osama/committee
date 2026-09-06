@@ -41,5 +41,28 @@
     "submit": "Publish listing",
     "signInToCreate": "Sign in to publish a listing.",
     "kycRequired": "Your ID verification must be approved before you can publish a listing."
+  },
+  "Negotiations": {
+    "offerPriceLabel": "Your offer (EGP)",
+    "makeOffer": "Make an offer",
+    "threadTitle": "Negotiation",
+    "statusLabel": "Status",
+    "status": {
+      "open": "Open",
+      "accepted": "Accepted",
+      "rejected": "Rejected"
+    },
+    "currentPriceLabel": "Current price",
+    "counterPriceLabel": "Your counter-offer (EGP)",
+    "accept": "Accept",
+    "reject": "Reject",
+    "counter": "Send counter-offer",
+    "waitingOnOtherParty": "Waiting for the other party to respond.",
+    "event": {
+      "offer": "Offer made",
+      "counter": "Counter-offer",
+      "accept": "Accepted",
+      "reject": "Rejected"
+    }
   }
 }

@@ -137,6 +137,32 @@ smoke test, not just a clean typecheck.
   message — a friendlier UX pass is a follow-up, not blocking for a first working,
   correctly-gated create flow.
 
+## Negotiation state machine (COM-19)
+- `src/lib/negotiations/state-machine.ts` — `applyNegotiationAction`, a pure function
+  (no DB access) implementing the fixed offer/counter/accept/reject transitions from
+  `docs/projects/groundtruth.md`'s anti-collusion mechanism. Unit-tested exhaustively
+  in its sibling `.test.ts` since it has no Neon-driver dependency to work around.
+- `src/lib/negotiations/negotiations.ts` — `startNegotiation`/`respondToNegotiation`
+  wrap the pure state machine with real reads/writes, using `pooledDb.transaction(...)`
+  with `.for('update')` row locks (not `db`) — packages/db/CLAUDE.md calls out offer
+  state transitions by name as needing this, so two near-simultaneous actions (e.g.
+  buyer accepts while seller counters) can't both apply against the same stale
+  snapshot. One open negotiation per (listing, buyer) pair, enforced in application
+  code inside the same transaction rather than a DB constraint.
+- A negotiation's `sellerId` is denormalized from the listing at creation time. Buyers
+  only need an authenticated session to open a negotiation — unlike sellers publishing
+  listings (COM-17), COM-19 does not require buyer KYC approval.
+- Routes: `POST /api/listings/[id]/negotiations` (open), `POST
+  /api/negotiations/[id]/respond` (counter/accept/reject). Pages: the listing detail
+  page grows a "make an offer" form for any authenticated non-owner; a new
+  `(site)/[locale]/negotiations/[id]` page shows the event history and, when it's the
+  viewer's turn, the accept/reject/counter forms — all server-rendered forms/Server
+  Actions, no client JS, consistent with COM-17's pages.
+- Validated: full migration + state-machine SQL sequence run directly against a local
+  Postgres instance (see packages/db/CLAUDE.md); the actual `pooledDb`/`db` Neon
+  clients still can't reach a local Postgres (same limitation noted under COM-18/17),
+  so the app-level dev-server smoke test only covers routes that don't touch the DB.
+
 ## Conventions specific to this app
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise
   auto-generates/overwrites `AGENTS.md`/`CLAUDE.md` in this directory on every run, which

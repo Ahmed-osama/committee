@@ -190,6 +190,20 @@ against local Postgres directly; full request-level exercise against a real Post
 still blocked on the same Neon-serverless-driver-needs-a-real-endpoint limitation noted
 under COM-18. Next up per the roadmap: COM-19 (offer/negotiation state machine).
 
+COM-19 done: structured offer/counter/accept/reject negotiation state machine.
+`apps/web/src/lib/negotiations/state-machine.ts` is a pure, exhaustively unit-tested
+transition function; `negotiations.ts` wraps it with `pooledDb.transaction(...)` +
+`.for('update')` row locks (per `packages/db/CLAUDE.md`'s note that offer state
+transitions need the pooled client, same as COM-20). One open negotiation per
+(listing, buyer) pair. Buyers only need to be authenticated, not KYC-approved (that
+gate stays specific to sellers per COM-17/18). New routes/pages: `POST
+/api/listings/[id]/negotiations`, `POST /api/negotiations/[id]/respond`, and a
+`(site)/[locale]/negotiations/[id]` thread page. See `apps/web/CLAUDE.md`'s
+"Negotiation state machine" section for the full breakdown, including how this was
+validated (migration + full state-machine SQL sequence run directly against local
+Postgres — the Neon-driver-needs-a-real-endpoint limitation from COM-17/18 still
+applies to `pooledDb`/`db` themselves). Next up: COM-20 (dual-confirmed deal closure).
+
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
 tracked as tripwires per the roadmap table above.
