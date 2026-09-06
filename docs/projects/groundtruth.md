@@ -142,5 +142,15 @@ Neon's pooled + unpooled connection strings) now exist on disk, with their own
 detail — this file stays the product-level spec/audience/roadmap doc. No live Neon project
 or Vercel deployment exists yet; `apps/web/README.md` documents the manual provisioning
 steps a human still needs to do. The one generated migration (placeholder `users` table)
-has not been applied to any database. Next up per the roadmap: COM-15 (KYC/OTP vendor
-spike).
+has not been applied to any database.
+
+COM-15 done: vendor spike written up at `docs/projects/groundtruth-vendor-spike.md`
+(Sumsub lead for KYC, Twilio Verify lead for OTP — both unconfirmed research
+recommendations, founder decides before any contract/API keys). `packages/auth-providers`
+defines the vendor-agnostic `KycProvider`/`OtpProvider` interfaces plus mock
+implementations that COM-18 codes against regardless of which vendor is finally chosen.
+Next up per the roadmap: COM-16 (i18n foundation).
+
+COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
+liability review, splitting dual-confirmation into its own service) — not attempted here,
+tracked as tripwires per the roadmap table above.

@@ -131,6 +131,18 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/auth-providers:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.4.0
+        version: 26.4.0
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
   packages/core:
     dependencies:
       '@ai-sdk/anthropic':
