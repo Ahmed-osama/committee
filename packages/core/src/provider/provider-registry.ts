@@ -9,6 +9,9 @@ import { openrouterAdapter } from './openrouter-adapter.js';
 import { perplexityAdapter } from './perplexity-adapter.js';
 import { sambanovaAdapter } from './sambanova-adapter.js';
 import { nvidiaNimAdapter } from './nvidia-nim-adapter.js';
+import { cerebrasAdapter } from './cerebras-adapter.js';
+import { mistralAdapter } from './mistral-adapter.js';
+import { cohereAdapter } from './cohere-adapter.js';
 
 export const PROVIDER_REGISTRY: Record<string, ProviderAdapter> = {
   ollama: ollamaAdapter,
@@ -21,6 +24,9 @@ export const PROVIDER_REGISTRY: Record<string, ProviderAdapter> = {
   perplexity: perplexityAdapter,
   sambanova: sambanovaAdapter,
   'nvidia-nim': nvidiaNimAdapter,
+  cerebras: cerebrasAdapter,
+  mistral: mistralAdapter,
+  cohere: cohereAdapter,
 };
 
 /** Ollama needs no key (it's local); the hosted providers need their API key set. */
@@ -46,6 +52,12 @@ export function isProviderConfigured(providerId: string): boolean {
       return !!process.env.SAMBANOVA_API_KEY;
     case 'nvidia-nim':
       return !!process.env.NVIDIA_API_KEY;
+    case 'cerebras':
+      return !!process.env.CEREBRAS_API_KEY;
+    case 'mistral':
+      return !!process.env.MISTRAL_API_KEY;
+    case 'cohere':
+      return !!process.env.COHERE_API_KEY;
     default:
       return false;
   }
