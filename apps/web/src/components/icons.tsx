@@ -60,6 +60,16 @@ export function BackIcon(props: IconProps) {
   );
 }
 
+// Points start-ward in an RTL layout (mirror with `rtl:rotate-180` at the call site
+// for a shared LTR/RTL icon file, or just rotate via className as needed).
+export function ChevronIcon(props: IconProps) {
+  return (
+    <svg {...base} strokeWidth={2.4} {...props}>
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 export function PlusIcon(props: IconProps) {
   return (
     <svg {...base} strokeWidth={2.6} {...props}>
