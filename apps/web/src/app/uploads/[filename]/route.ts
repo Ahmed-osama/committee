@@ -8,7 +8,10 @@ import { resolveUploadPath } from '@/lib/storage/local-file-storage';
 // documents/selfies are sensitive, and filenames are unguessable UUIDs, but this is
 // not a substitute for per-owner authorization; a real storage vendor's signed URLs
 // would replace this route entirely.
-export async function GET(_request: Request, { params }: { params: Promise<{ filename: string }> }): Promise<NextResponse> {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ filename: string }> },
+): Promise<NextResponse> {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'authentication required' }, { status: 401 });

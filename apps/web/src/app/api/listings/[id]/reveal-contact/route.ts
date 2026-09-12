@@ -7,7 +7,10 @@ import {
   revealSellerContact,
 } from '@/lib/payments/credits';
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> {
+export async function POST(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'authentication required' }, { status: 401 });

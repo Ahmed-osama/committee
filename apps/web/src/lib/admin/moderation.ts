@@ -25,7 +25,10 @@ export async function getRejectedKycSubmissions() {
 
 export async function getHighActivityBuyersWithNoClose() {
   const negotiationCounts = await db
-    .select({ buyerId: negotiations.buyerId, negotiationCount: sql<number>`count(*)`.mapWith(Number) })
+    .select({
+      buyerId: negotiations.buyerId,
+      negotiationCount: sql<number>`count(*)`.mapWith(Number),
+    })
     .from(negotiations)
     .groupBy(negotiations.buyerId);
 
@@ -36,7 +39,9 @@ export async function getHighActivityBuyersWithNoClose() {
     .groupBy(deals.buyerId);
   const closedByBuyer = new Map(closedCounts.map((row) => [row.buyerId, row.closedCount]));
 
-  const flagged = negotiationCounts.filter((row) => isHighActivityNoClose(row.negotiationCount, closedByBuyer.get(row.buyerId) ?? 0));
+  const flagged = negotiationCounts.filter((row) =>
+    isHighActivityNoClose(row.negotiationCount, closedByBuyer.get(row.buyerId) ?? 0),
+  );
   if (flagged.length === 0) {
     return [];
   }
@@ -46,7 +51,12 @@ export async function getHighActivityBuyersWithNoClose() {
       await db
         .select({ id: users.id, phone: users.phone })
         .from(users)
-        .where(inArray(users.id, flagged.map((row) => row.buyerId)))
+        .where(
+          inArray(
+            users.id,
+            flagged.map((row) => row.buyerId),
+          ),
+        )
     ).map((row) => [row.id, row.phone]),
   );
 

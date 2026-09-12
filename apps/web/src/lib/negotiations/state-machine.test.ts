@@ -42,14 +42,29 @@ test('acting out of turn is rejected', () => {
 
 test('acting on a non-open negotiation is rejected', () => {
   const accepted = open({ status: 'accepted' });
-  assert.throws(() => applyNegotiationAction(accepted, 'seller', 'counter', 1), NegotiationNotOpenError);
+  assert.throws(
+    () => applyNegotiationAction(accepted, 'seller', 'counter', 1),
+    NegotiationNotOpenError,
+  );
 });
 
 test('countering requires a positive whole-number price', () => {
-  assert.throws(() => applyNegotiationAction(open(), 'seller', 'counter', 0), InvalidCounterPriceError);
-  assert.throws(() => applyNegotiationAction(open(), 'seller', 'counter', -5), InvalidCounterPriceError);
-  assert.throws(() => applyNegotiationAction(open(), 'seller', 'counter', 1.5), InvalidCounterPriceError);
-  assert.throws(() => applyNegotiationAction(open(), 'seller', 'counter', undefined), InvalidCounterPriceError);
+  assert.throws(
+    () => applyNegotiationAction(open(), 'seller', 'counter', 0),
+    InvalidCounterPriceError,
+  );
+  assert.throws(
+    () => applyNegotiationAction(open(), 'seller', 'counter', -5),
+    InvalidCounterPriceError,
+  );
+  assert.throws(
+    () => applyNegotiationAction(open(), 'seller', 'counter', 1.5),
+    InvalidCounterPriceError,
+  );
+  assert.throws(
+    () => applyNegotiationAction(open(), 'seller', 'counter', undefined),
+    InvalidCounterPriceError,
+  );
 });
 
 test('accept/reject ignore any counterPriceEgp argument', () => {

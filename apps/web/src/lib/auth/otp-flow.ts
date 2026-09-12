@@ -22,7 +22,11 @@ export async function requestOtp(phone: string): Promise<{ requestId: string }> 
 // an existing user (login) or creates one (registration) — there's no separate signup
 // step, consistent with "keep flows shallow" in docs/projects/groundtruth.md.
 export async function verifyOtp(requestId: string, code: string): Promise<SessionPayload> {
-  const [pending] = await db.select().from(otpRequests).where(eq(otpRequests.id, requestId)).limit(1);
+  const [pending] = await db
+    .select()
+    .from(otpRequests)
+    .where(eq(otpRequests.id, requestId))
+    .limit(1);
   if (!pending || pending.consumedAt) {
     throw new InvalidOtpRequestError('no pending OTP request for this requestId');
   }
@@ -34,7 +38,11 @@ export async function verifyOtp(requestId: string, code: string): Promise<Sessio
 
   await db.update(otpRequests).set({ consumedAt: new Date() }).where(eq(otpRequests.id, requestId));
 
-  const [existingUser] = await db.select().from(users).where(eq(users.phone, pending.phone)).limit(1);
+  const [existingUser] = await db
+    .select()
+    .from(users)
+    .where(eq(users.phone, pending.phone))
+    .limit(1);
   if (existingUser) {
     return { userId: existingUser.id, role: existingUser.role };
   }

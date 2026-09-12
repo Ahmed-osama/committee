@@ -24,7 +24,11 @@ export function validateListingInput(input: Record<string, unknown>): ListingInp
   if (typeof title !== 'string' || title.trim().length === 0 || title.length > 200) {
     throw new InvalidListingInputError('title is required (max 200 characters)');
   }
-  if (typeof description !== 'string' || description.trim().length === 0 || description.length > 4000) {
+  if (
+    typeof description !== 'string' ||
+    description.trim().length === 0 ||
+    description.length > 4000
+  ) {
     throw new InvalidListingInputError('description is required (max 4000 characters)');
   }
   if (typeof zone !== 'string' || zone.trim().length === 0 || zone.length > 100) {
@@ -40,7 +44,12 @@ export function validateListingInput(input: Record<string, unknown>): ListingInp
   }
 
   const price = typeof priceEgp === 'string' ? Number(priceEgp) : priceEgp;
-  if (typeof price !== 'number' || !Number.isFinite(price) || !Number.isInteger(price) || price <= 0) {
+  if (
+    typeof price !== 'number' ||
+    !Number.isFinite(price) ||
+    !Number.isInteger(price) ||
+    price <= 0
+  ) {
     throw new InvalidListingInputError('priceEgp must be a positive whole number');
   }
 

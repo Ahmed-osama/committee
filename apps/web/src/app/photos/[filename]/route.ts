@@ -5,7 +5,10 @@ import { resolveUploadPath } from '@/lib/storage/local-file-storage';
 // Public listing-photo serving, no auth — browsing listings never requires login (see
 // docs/projects/groundtruth.md). Contrast with src/app/uploads/[filename]/route.ts,
 // which serves the private KYC bucket and does require a session.
-export async function GET(_request: Request, { params }: { params: Promise<{ filename: string }> }): Promise<NextResponse> {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ filename: string }> },
+): Promise<NextResponse> {
   const { filename } = await params;
   const filePath = resolveUploadPath(filename, 'public');
   if (!filePath) {

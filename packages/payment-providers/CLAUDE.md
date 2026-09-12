@@ -7,6 +7,7 @@ Stripe was ruled out for an Egypt-based business without a foreign entity), but 
 Paymob account/credentials exist yet.
 
 ## Layout
+
 - `src/payment.ts` — the `PaymentProvider` interface, no implementation.
 - `src/mock.ts` — `MockPaymentProvider`, used by `apps/web` and tests until a real
   Paymob adapter is wired up. Its `checkoutUrl` points at `apps/web`'s own dev-only
@@ -17,6 +18,7 @@ Paymob account/credentials exist yet.
   than always trusted.
 
 ## Conventions
+
 - A real vendor adapter (`src/paymob.ts`) implements `PaymentProvider` as a new
   sibling file, not a change to the interface — same pattern as
   `packages/auth-providers`.

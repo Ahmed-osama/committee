@@ -15,7 +15,9 @@ test('rejects a token signed with a different secret', () => {
 test('rejects a tampered payload', () => {
   const token = createSessionToken({ userId: 'user-1', role: 'user' }, 'secret');
   const signature = token.split('.')[1];
-  const tamperedPayload = Buffer.from(JSON.stringify({ userId: 'user-2', role: 'admin' })).toString('base64url');
+  const tamperedPayload = Buffer.from(JSON.stringify({ userId: 'user-2', role: 'admin' })).toString(
+    'base64url',
+  );
   assert.equal(verifySessionToken(`${tamperedPayload}.${signature}`, 'secret'), null);
 });
 

@@ -107,7 +107,12 @@ export const negotiations = pgTable('negotiations', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const negotiationEventTypeEnum = pgEnum('negotiation_event_type', ['offer', 'counter', 'accept', 'reject']);
+export const negotiationEventTypeEnum = pgEnum('negotiation_event_type', [
+  'offer',
+  'counter',
+  'accept',
+  'reject',
+]);
 
 // Append-only audit trail of every state transition — never mutated or deleted, so a
 // disputed negotiation always has a full, ordered record of who proposed what and when.
@@ -157,7 +162,11 @@ export const deals = pgTable('deals', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const creditPurchaseStatusEnum = pgEnum('credit_purchase_status', ['pending', 'completed', 'failed']);
+export const creditPurchaseStatusEnum = pgEnum('credit_purchase_status', [
+  'pending',
+  'completed',
+  'failed',
+]);
 
 // One row per Paymob (or mock, pending COM-15's vendor pick — see
 // packages/payment-providers) checkout attempt. `providerReference` is unique so the
@@ -199,14 +208,18 @@ export const creditLedgerEntries = pgTable('credit_ledger_entries', {
 // One row per (listing, buyer) — the pay-to-reveal paywall's gate. A unique
 // constraint on the pair means a buyer is only ever charged once per listing;
 // revisiting an already-revealed listing re-reads this row instead of re-charging.
-export const contactReveals = pgTable('contact_reveals', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  listingId: uuid('listing_id')
-    .notNull()
-    .references(() => listings.id, { onDelete: 'cascade' }),
-  buyerId: uuid('buyer_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  creditsSpent: integer('credits_spent').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [unique().on(table.listingId, table.buyerId)]);
+export const contactReveals = pgTable(
+  'contact_reveals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    listingId: uuid('listing_id')
+      .notNull()
+      .references(() => listings.id, { onDelete: 'cascade' }),
+    buyerId: uuid('buyer_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    creditsSpent: integer('credits_spent').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique().on(table.listingId, table.buyerId)],
+);

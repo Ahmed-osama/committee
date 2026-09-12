@@ -7,7 +7,15 @@
     "title": "GroundTruth",
     "description": "الموقع لسه قيد التجهيز.",
     "browseListings": "تصفح الإعلانات",
-    "viewDealFeed": "شوف الصفقات الحقيقية اللي تمت"
+    "viewDealFeed": "شوف الصفقات الحقيقية اللي تمت",
+    "tagline": "بيع وشراء الأرض والعقار، بكل أمانة.",
+    "browseByType": "تصفح حسب النوع"
+  },
+  "Nav": {
+    "home": "الرئيسية",
+    "listings": "الإعلانات",
+    "deals": "صفقات حقيقية",
+    "account": "حسابي"
   },
   "Login": {
     "title": "تسجيل الدخول",

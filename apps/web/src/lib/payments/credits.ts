@@ -1,4 +1,12 @@
-import { contactReveals, creditLedgerEntries, creditPurchases, db, listings, pooledDb, users } from '@committee/db';
+import {
+  contactReveals,
+  creditLedgerEntries,
+  creditPurchases,
+  db,
+  listings,
+  pooledDb,
+  users,
+} from '@committee/db';
 import { and, eq, sql } from 'drizzle-orm';
 import { findCreditPackage, REVEAL_COST_CREDITS } from './packages';
 import { paymentProvider } from './providers';
@@ -45,7 +53,9 @@ export async function startCreditPurchase(userId: string, packageId: string) {
 // Paymob (like most payment vendors) can and does retry webhook delivery, and this
 // must be safe to call more than once for the same event without double-crediting.
 export async function handlePaymentWebhook(rawBody: string, signatureHeader: string | null) {
-  const event = signatureHeader ? paymentProvider.parseWebhookEvent(rawBody, signatureHeader) : null;
+  const event = signatureHeader
+    ? paymentProvider.parseWebhookEvent(rawBody, signatureHeader)
+    : null;
   if (!event) {
     throw new InvalidWebhookSignatureError('webhook signature missing or invalid');
   }
@@ -87,7 +97,10 @@ export async function handlePaymentWebhook(rawBody: string, signatureHeader: str
 // Read-only check for whether `buyerId` has already paid to reveal `listingId` —
 // used by the listing detail page to decide whether to render the revealed phone or
 // the "reveal" form, without itself ever charging.
-export async function getExistingReveal(buyerId: string, listingId: string): Promise<{ phone: string } | null> {
+export async function getExistingReveal(
+  buyerId: string,
+  listingId: string,
+): Promise<{ phone: string } | null> {
   const [existing] = await db
     .select()
     .from(contactReveals)
@@ -101,7 +114,11 @@ export async function getExistingReveal(buyerId: string, listingId: string): Pro
   if (!listing) {
     return null;
   }
-  const [seller] = await db.select({ phone: users.phone }).from(users).where(eq(users.id, listing.sellerId)).limit(1);
+  const [seller] = await db
+    .select({ phone: users.phone })
+    .from(users)
+    .where(eq(users.id, listing.sellerId))
+    .limit(1);
   return { phone: seller?.phone ?? '' };
 }
 
@@ -117,7 +134,10 @@ export async function getExistingReveal(buyerId: string, listingId: string): Pro
 // lock, but balance is 0 either way, so the only consequence is both would
 // consistently fail with InsufficientCreditsError, not both succeed — not a real
 // double-spend risk in that specific case.
-export async function revealSellerContact(buyerId: string, listingId: string): Promise<{ phone: string; alreadyRevealed: boolean }> {
+export async function revealSellerContact(
+  buyerId: string,
+  listingId: string,
+): Promise<{ phone: string; alreadyRevealed: boolean }> {
   return pooledDb.transaction(async (tx) => {
     const [existing] = await tx
       .select()
@@ -131,7 +151,11 @@ export async function revealSellerContact(buyerId: string, listingId: string): P
     }
 
     if (existing) {
-      const [seller] = await tx.select({ phone: users.phone }).from(users).where(eq(users.id, listing.sellerId)).limit(1);
+      const [seller] = await tx
+        .select({ phone: users.phone })
+        .from(users)
+        .where(eq(users.id, listing.sellerId))
+        .limit(1);
       return { phone: seller?.phone ?? '', alreadyRevealed: true };
     }
 
@@ -139,7 +163,11 @@ export async function revealSellerContact(buyerId: string, listingId: string): P
       throw new CannotRevealOwnListingError('a seller cannot pay to reveal their own listing');
     }
 
-    const ledgerRows = await tx.select().from(creditLedgerEntries).where(eq(creditLedgerEntries.userId, buyerId)).for('update');
+    const ledgerRows = await tx
+      .select()
+      .from(creditLedgerEntries)
+      .where(eq(creditLedgerEntries.userId, buyerId))
+      .for('update');
     const balance = ledgerRows.reduce((sum, row) => sum + row.amount, 0);
     if (balance < REVEAL_COST_CREDITS) {
       throw new InsufficientCreditsError('insufficient credit balance to reveal contact info');
@@ -151,9 +179,15 @@ export async function revealSellerContact(buyerId: string, listingId: string): P
       reason: 'reveal',
       referenceId: listingId,
     });
-    await tx.insert(contactReveals).values({ listingId, buyerId, creditsSpent: REVEAL_COST_CREDITS });
+    await tx
+      .insert(contactReveals)
+      .values({ listingId, buyerId, creditsSpent: REVEAL_COST_CREDITS });
 
-    const [seller] = await tx.select({ phone: users.phone }).from(users).where(eq(users.id, listing.sellerId)).limit(1);
+    const [seller] = await tx
+      .select({ phone: users.phone })
+      .from(users)
+      .where(eq(users.id, listing.sellerId))
+      .limit(1);
     return { phone: seller?.phone ?? '', alreadyRevealed: false };
   });
 }

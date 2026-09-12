@@ -19,7 +19,11 @@ export function isHighActivityNoClose(negotiationCount: number, closedDealCount:
 // is never applied against a cell with fewer than MIN_DEALS_FOR_VALUATION deals.
 export const PRICE_OUTLIER_RATIO = 0.5;
 
-export function isPriceOutlier(dealPricePerSqmEgp: number, cellAvgPricePerSqmEgp: number, ratio: number = PRICE_OUTLIER_RATIO): boolean {
+export function isPriceOutlier(
+  dealPricePerSqmEgp: number,
+  cellAvgPricePerSqmEgp: number,
+  ratio: number = PRICE_OUTLIER_RATIO,
+): boolean {
   if (cellAvgPricePerSqmEgp <= 0) {
     return false;
   }

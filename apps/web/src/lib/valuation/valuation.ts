@@ -27,8 +27,20 @@ export type ValuationCell = {
 // price-per-sqm math are cheap to unit test — this is the one place COM-23's
 // "no badge until it's earned" rule is actually enforced, so it needs to be
 // unambiguously correct.
-export function computeValuationCells(samples: ClosedDealSample[], minDeals: number = MIN_DEALS_FOR_VALUATION): ValuationCell[] {
-  const groups = new Map<string, { zone: string; propertyType: string; areaBand: string; totalPricePerSqm: number; count: number }>();
+export function computeValuationCells(
+  samples: ClosedDealSample[],
+  minDeals: number = MIN_DEALS_FOR_VALUATION,
+): ValuationCell[] {
+  const groups = new Map<
+    string,
+    {
+      zone: string;
+      propertyType: string;
+      areaBand: string;
+      totalPricePerSqm: number;
+      count: number;
+    }
+  >();
 
   for (const sample of samples) {
     const areaBand = areaBandFor(sample.areaSqm);
@@ -39,7 +51,13 @@ export function computeValuationCells(samples: ClosedDealSample[], minDeals: num
       existing.totalPricePerSqm += pricePerSqm;
       existing.count += 1;
     } else {
-      groups.set(key, { zone: sample.zone, propertyType: sample.propertyType, areaBand, totalPricePerSqm: pricePerSqm, count: 1 });
+      groups.set(key, {
+        zone: sample.zone,
+        propertyType: sample.propertyType,
+        areaBand,
+        totalPricePerSqm: pricePerSqm,
+        count: 1,
+      });
     }
   }
 
@@ -61,5 +79,10 @@ export function findValuationForListing(
   areaSqm: number,
 ): ValuationCell | null {
   const areaBand = areaBandFor(areaSqm);
-  return cells.find((cell) => cell.zone === zone && cell.propertyType === propertyType && cell.areaBand === areaBand) ?? null;
+  return (
+    cells.find(
+      (cell) =>
+        cell.zone === zone && cell.propertyType === propertyType && cell.areaBand === areaBand,
+    ) ?? null
+  );
 }

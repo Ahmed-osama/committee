@@ -3,7 +3,10 @@ import { InvalidPhoneError, requestOtp } from '@/lib/auth/otp-flow';
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body: unknown = await request.json().catch(() => null);
-  const phone = typeof body === 'object' && body !== null && 'phone' in body ? (body as { phone: unknown }).phone : null;
+  const phone =
+    typeof body === 'object' && body !== null && 'phone' in body
+      ? (body as { phone: unknown }).phone
+      : null;
 
   if (typeof phone !== 'string') {
     return NextResponse.json({ error: 'phone is required' }, { status: 400 });

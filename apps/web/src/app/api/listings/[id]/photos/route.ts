@@ -3,7 +3,10 @@ import { getSession } from '@/app/api/_lib/session';
 import { addListingPhoto, NotListingOwnerError } from '@/lib/listings/listings';
 import { saveUploadedFile } from '@/lib/storage/local-file-storage';
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'authentication required' }, { status: 401 });
@@ -18,10 +21,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'photo file is required' }, { status: 400 });
   }
 
-  const stored = await saveUploadedFile(new Uint8Array(await photo.arrayBuffer()), photo.name, 'public');
+  const stored = await saveUploadedFile(
+    new Uint8Array(await photo.arrayBuffer()),
+    photo.name,
+    'public',
+  );
 
   try {
-    const row = await addListingPhoto(listingId, session.userId, stored.url, Number.isFinite(sortOrder) ? sortOrder : 0);
+    const row = await addListingPhoto(
+      listingId,
+      session.userId,
+      stored.url,
+      Number.isFinite(sortOrder) ? sortOrder : 0,
+    );
     return NextResponse.json(row, { status: 201 });
   } catch (error) {
     if (error instanceof NotListingOwnerError) {

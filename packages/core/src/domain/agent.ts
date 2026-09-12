@@ -1,4 +1,5 @@
-export type AgentRole = 'planner' | 'architect' | 'skeptic' | 'devils_advocate' | 'estimator' | 'reviewer' | 'visualizer';
+export type AgentRole =
+  'planner' | 'architect' | 'skeptic' | 'devils_advocate' | 'estimator' | 'reviewer' | 'visualizer';
 
 export interface AgentConfig {
   id: string;

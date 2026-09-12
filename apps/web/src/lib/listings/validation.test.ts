@@ -30,16 +30,34 @@ test('coerces numeric form-data strings', () => {
 });
 
 test('rejects an invalid propertyType', () => {
-  assert.throws(() => validateListingInput({ ...VALID_INPUT, propertyType: 'castle' }), InvalidListingInputError);
+  assert.throws(
+    () => validateListingInput({ ...VALID_INPUT, propertyType: 'castle' }),
+    InvalidListingInputError,
+  );
 });
 
 test('rejects non-positive or non-integer area/price', () => {
-  assert.throws(() => validateListingInput({ ...VALID_INPUT, areaSqm: 0 }), InvalidListingInputError);
-  assert.throws(() => validateListingInput({ ...VALID_INPUT, areaSqm: 12.5 }), InvalidListingInputError);
-  assert.throws(() => validateListingInput({ ...VALID_INPUT, priceEgp: -1 }), InvalidListingInputError);
+  assert.throws(
+    () => validateListingInput({ ...VALID_INPUT, areaSqm: 0 }),
+    InvalidListingInputError,
+  );
+  assert.throws(
+    () => validateListingInput({ ...VALID_INPUT, areaSqm: 12.5 }),
+    InvalidListingInputError,
+  );
+  assert.throws(
+    () => validateListingInput({ ...VALID_INPUT, priceEgp: -1 }),
+    InvalidListingInputError,
+  );
 });
 
 test('rejects empty or missing text fields', () => {
-  assert.throws(() => validateListingInput({ ...VALID_INPUT, title: '   ' }), InvalidListingInputError);
-  assert.throws(() => validateListingInput({ ...VALID_INPUT, description: undefined }), InvalidListingInputError);
+  assert.throws(
+    () => validateListingInput({ ...VALID_INPUT, title: '   ' }),
+    InvalidListingInputError,
+  );
+  assert.throws(
+    () => validateListingInput({ ...VALID_INPUT, description: undefined }),
+    InvalidListingInputError,
+  );
 });

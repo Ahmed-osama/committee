@@ -18,8 +18,15 @@ export async function POST(request: Request): Promise<NextResponse> {
   const selfie = form.get('selfie');
   const nationalIdNumber = form.get('nationalIdNumber');
 
-  if (!(document instanceof File) || !(selfie instanceof File) || typeof nationalIdNumber !== 'string') {
-    return NextResponse.json({ error: 'document, selfie, and nationalIdNumber are required' }, { status: 400 });
+  if (
+    !(document instanceof File) ||
+    !(selfie instanceof File) ||
+    typeof nationalIdNumber !== 'string'
+  ) {
+    return NextResponse.json(
+      { error: 'document, selfie, and nationalIdNumber are required' },
+      { status: 400 },
+    );
   }
 
   const [storedDocument, storedSelfie] = await Promise.all([

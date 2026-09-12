@@ -1,6 +1,6 @@
 ---
 description: Turn a markdown spec into Linear issues, resolving team/labels via the MCP server rather than guessing them here
-argument-hint: "[spec-file]"
+argument-hint: '[spec-file]'
 arguments: [spec_file]
 allowed-tools: Read, mcp__committee__committee_resolve_linear_target, mcp__linear__save_issue, mcp__linear__save_project
 disable-model-invocation: false

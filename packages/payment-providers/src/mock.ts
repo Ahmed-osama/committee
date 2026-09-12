@@ -1,5 +1,10 @@
 import { createHmac, randomUUID } from 'node:crypto';
-import type { CheckoutSession, CreditPackage, PaymentProvider, PaymentWebhookEvent } from './payment.js';
+import type {
+  CheckoutSession,
+  CreditPackage,
+  PaymentProvider,
+  PaymentWebhookEvent,
+} from './payment.js';
 
 // TODO(human): replace with a real PaymobPaymentProvider once the founder has a
 // Paymob merchant account and API credentials (see docs/projects/groundtruth.md's
@@ -14,7 +19,10 @@ function sign(rawBody: string): string {
 }
 
 export class MockPaymentProvider implements PaymentProvider {
-  async createCheckout(_input: { userId: string; creditPackage: CreditPackage }): Promise<CheckoutSession> {
+  async createCheckout(_input: {
+    userId: string;
+    creditPackage: CreditPackage;
+  }): Promise<CheckoutSession> {
     const providerReference = randomUUID();
     return {
       providerReference,
@@ -39,7 +47,10 @@ export class MockPaymentProvider implements PaymentProvider {
 
     try {
       const parsed = JSON.parse(rawBody) as { providerReference?: unknown; status?: unknown };
-      if (typeof parsed.providerReference !== 'string' || (parsed.status !== 'succeeded' && parsed.status !== 'failed')) {
+      if (
+        typeof parsed.providerReference !== 'string' ||
+        (parsed.status !== 'succeeded' && parsed.status !== 'failed')
+      ) {
         return null;
       }
       return { providerReference: parsed.providerReference, status: parsed.status };

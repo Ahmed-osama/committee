@@ -3,6 +3,7 @@
 Drizzle/Postgres client for GroundTruth, wired to Neon. Consumed as `@committee/db`.
 
 ## Layout
+
 - `src/schema.ts` — Drizzle table definitions. `users` (phone, role), `otp_requests`
   (keyed by the OtpProvider's own requestId), and `kyc_verifications` (FK-cascades from
   `users`) landed with COM-18 — see `apps/web/src/lib/auth/` for the flows that write
@@ -10,7 +11,7 @@ Drizzle/Postgres client for GroundTruth, wired to Neon. Consumed as `@committee/
   `listing_photos` (both FK-cascade from their parent) landed with COM-17 — see
   `apps/web/src/lib/listings/`.
 - `src/index.ts` re-exports schema tables/enums **by name**, not `export * from
-  './schema.js'` — apps/web's bundler (see its CLAUDE.md's "Bundler quirk" note)
+'./schema.js'` — apps/web's bundler (see its CLAUDE.md's "Bundler quirk" note)
   didn't reliably propagate a wildcard re-export's names when consuming this package.
   Add new schema exports to both `schema.ts` and the explicit list in `index.ts`.
 - `src/client.ts` — exports two clients, both built off `DATABASE_URL` (the pooled,
@@ -30,6 +31,7 @@ Drizzle/Postgres client for GroundTruth, wired to Neon. Consumed as `@committee/
   via `pnpm db:generate` after changing `schema.ts`.
 
 ## Conventions
+
 - Don't add a query helper that opens its own connection — always go through `db` or
   `pooledDb` from `client.ts`, so there's exactly one place that knows the connection
   strings and driver choice.

@@ -31,7 +31,8 @@ export default async function CreditsPage() {
       <ul>
         {CREDIT_PACKAGES.map((creditPackage) => (
           <li key={creditPackage.id}>
-            {creditPackage.credits} {t('creditsUnit')} — {creditPackage.priceEgp.toLocaleString()} EGP
+            {creditPackage.credits} {t('creditsUnit')} — {creditPackage.priceEgp.toLocaleString()}{' '}
+            EGP
             <form action={purchaseCreditsAction}>
               <input type="hidden" name="packageId" value={creditPackage.id} />
               <button type="submit">{t('buy')}</button>

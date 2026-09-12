@@ -4,6 +4,7 @@ Next.js App Router deployable for GroundTruth. See `docs/projects/groundtruth.md
 product spec/audience/roadmap; this file is implementation-level detail for this app only.
 
 ## Layout
+
 - `src/app/` — routes, layouts, Server Components. Next.js request/render context
   (`next/headers`, `next/cookies`, `next/navigation`) is only allowed here.
 - `src/lib/` — domain logic: business rules, data access, anything that should stay
@@ -20,6 +21,7 @@ product spec/audience/roadmap; this file is implementation-level detail for this
   `/admin` (COM-24's dashboard) — never let that route get a locale prefix.
 
 ## i18n / RTL (COM-16)
+
 - All routes live under `src/app/(site)/[locale]/` — a route group (`(site)`) wrapping the
   `[locale]` dynamic segment, specifically so `src/app/(admin)/admin/` (COM-24) can be a
   second, sibling **root layout** with its own `<html>`/`<body>` that never gets wrapped in
@@ -40,15 +42,17 @@ product spec/audience/roadmap; this file is implementation-level detail for this
   value, not an English-in-Arabic-slot placeholder.
 
 ## Data access
+
 Uses `@committee/db` (`packages/db`) rather than talking to Postgres directly. See that
 package's notes on the two exported clients (`db` for normal reads/writes, `pooledDb` for
 future transactional writes) before adding a new query.
 
 ## Bundler quirk: workspace packages + NodeNext `.js` imports (COM-17)
+
 `packages/db` and `packages/auth-providers` are consumed as raw TypeScript source
 (`main`/`exports` point straight at `src/index.ts`, no build step — the same pattern
 `packages/core` uses for `apps/cli`/`apps/digest`). Their own internal relative imports
-use NodeNext-style `./foo.js` specifiers, which is *required* for `tsc`
+use NodeNext-style `./foo.js` specifiers, which is _required_ for `tsc`
 (`moduleResolution: NodeNext`) and for `node --import tsx` (their `db:migrate`/test
 scripts) to resolve them — but neither Turbopack nor plain webpack remaps `.js` to the
 real `.ts` file for a workspace package's own internal imports by default. Turbopack
@@ -72,6 +76,7 @@ imports one of these packages, which is why every issue that touches a new
 smoke test, not just a clean typecheck.
 
 ## Auth, KYC & compliance (COM-18)
+
 - `src/lib/auth/providers.ts` — module-level `otpProvider`/`kycProvider` singletons,
   currently `@committee/auth-providers`' mocks. This is the one place a real vendor
   adapter (once the founder picks one — see `docs/projects/groundtruth-vendor-spike.md`)
@@ -109,6 +114,7 @@ smoke test, not just a clean typecheck.
   (see `docs/projects/groundtruth.md`'s anti-collusion mechanism).
 
 ## Listings (COM-17)
+
 - `src/lib/listings/validation.ts` — pure shape/range validation (`validateListingInput`),
   shared by the create-listing Server Action and the `/api/listings` route so both reject
   bad input the same way. `LISTING_TYPES` is the single source of truth for the
@@ -139,6 +145,7 @@ smoke test, not just a clean typecheck.
   correctly-gated create flow.
 
 ## Negotiation state machine (COM-19)
+
 - `src/lib/negotiations/state-machine.ts` — `applyNegotiationAction`, a pure function
   (no DB access) implementing the fixed offer/counter/accept/reject transitions from
   `docs/projects/groundtruth.md`'s anti-collusion mechanism. Unit-tested exhaustively
@@ -154,7 +161,7 @@ smoke test, not just a clean typecheck.
   only need an authenticated session to open a negotiation — unlike sellers publishing
   listings (COM-17), COM-19 does not require buyer KYC approval.
 - Routes: `POST /api/listings/[id]/negotiations` (open), `POST
-  /api/negotiations/[id]/respond` (counter/accept/reject). Pages: the listing detail
+/api/negotiations/[id]/respond` (counter/accept/reject). Pages: the listing detail
   page grows a "make an offer" form for any authenticated non-owner; a new
   `(site)/[locale]/negotiations/[id]` page shows the event history and, when it's the
   viewer's turn, the accept/reject/counter forms — all server-rendered forms/Server
@@ -165,6 +172,7 @@ smoke test, not just a clean typecheck.
   so the app-level dev-server smoke test only covers routes that don't touch the DB.
 
 ## Dual-confirmed deal closure (COM-20)
+
 - `src/lib/deals/confirmation.ts` — `applyConfirmation`, a pure merge function (same
   split as COM-19's state-machine.ts/negotiations.ts): given the current
   buyer/seller-confirmed timestamps and who just confirmed, returns the next state,
@@ -195,6 +203,7 @@ smoke test, not just a clean typecheck.
   exercising `pooledDb`/`db` themselves through a live route.
 
 ## Pay-to-reveal paywall & credit ledger (COM-21)
+
 - `packages/payment-providers` — new sibling package to `auth-providers`, same
   vendor-agnostic-interface pattern: `PaymentProvider` (`createCheckout`,
   `parseWebhookEvent`) plus `MockPaymentProvider`. Paymob is the confirmed vendor
@@ -233,7 +242,7 @@ smoke test, not just a clean typecheck.
 - Routes: `POST /api/credits/purchase`, `POST /api/payments/webhook` (signature
   header name is a placeholder pending real Paymob docs — see the `TODO(human)` in
   that route), `POST /api/listings/[id]/reveal-contact`. Pages: `(site)/[locale]/
-  credits` (balance + package list), listing detail page grows a reveal-contact
+credits` (balance + package list), listing detail page grows a reveal-contact
   section for any authenticated non-owner.
 - Validated the same way as COM-19/20: full purchase → webhook-completes → reveal →
   double-charge-guard SQL sequence run directly against local Postgres (including
@@ -245,6 +254,7 @@ smoke test, not just a clean typecheck.
   COM-17-20.
 
 ## Public anonymized deal feed (COM-22)
+
 - `src/lib/deals/feed.ts` — `listPublicDealFeed`, a single `db` read (no auth, no
   transaction needed) joining `deals`/`listings`, filtered to `status = 'closed'` and
   selecting only `zone`/`propertyType`/`agreedPriceEgp`/`closedAt` — deliberately an
@@ -262,6 +272,7 @@ smoke test, not just a clean typecheck.
   correctly excluded, and a `'closed'` one surfaces with only the anonymized columns.
 
 ## Valuation engine (COM-23)
+
 - `src/lib/valuation/bands.ts` — `areaBandFor`, a pure 100 sqm-wide bucketing
   function (fixed width for now; adaptive banding is a possible follow-up once
   there's real deal volume to justify it).
@@ -285,6 +296,7 @@ smoke test, not just a clean typecheck.
 - Validated the underlying join query directly against local Postgres.
 
 ## Admin anti-gaming & moderation dashboard (COM-24)
+
 - `src/app/(admin)/admin/` — a second, sibling root layout to `(site)/[locale]/`, per
   the route-group split noted under "i18n / RTL" above. Deliberately English-only, no
   `next-intl` at all (COM-25's Arabic pass explicitly excludes it — this is internal
@@ -311,6 +323,7 @@ smoke test, not just a clean typecheck.
   just typechecks).
 
 ## Arabic UI copy pass (COM-25)
+
 - `messages/ar.json` now carries real Arabic translations for every key introduced
   through COM-22 (COM-16/17/18/19/20/21/22) — not the English-mirrored placeholder it
   shipped with under COM-16. `(admin)/admin` (COM-24) is excluded, as it doesn't use
@@ -328,6 +341,7 @@ smoke test, not just a clean typecheck.
   with the real Arabic copy (not just the `lang`/`dir` attributes flipping).
 
 ## Conventions specific to this app
+
 - `next.config.js` sets `agentRules: false` — Next 16's `next dev` otherwise
   auto-generates/overwrites `AGENTS.md`/`CLAUDE.md` in this directory on every run, which
   fights with this repo's own hand-maintained CLAUDE.md hierarchy (root CLAUDE.md's

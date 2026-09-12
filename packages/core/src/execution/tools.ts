@@ -14,7 +14,9 @@ const MAX_OUTPUT_CHARS = 8_000;
 const COMMAND_TIMEOUT_MS = 120_000;
 
 function truncate(text: string): string {
-  return text.length > MAX_OUTPUT_CHARS ? `${text.slice(0, MAX_OUTPUT_CHARS)}\n… (truncated)` : text;
+  return text.length > MAX_OUTPUT_CHARS
+    ? `${text.slice(0, MAX_OUTPUT_CHARS)}\n… (truncated)`
+    : text;
 }
 
 /** Keeps read_file/write_file inside the repo — run_command is a full shell and isn't sandboxed the same way. */
@@ -39,11 +41,17 @@ export const executionTools: ToolSet = {
     inputSchema: z.object({ command: z.string() }),
     execute: async ({ command }) => {
       try {
-        const { stdout, stderr } = await execAsync(command, { cwd: REPO_ROOT, timeout: COMMAND_TIMEOUT_MS, maxBuffer: 10 * 1024 * 1024 });
+        const { stdout, stderr } = await execAsync(command, {
+          cwd: REPO_ROOT,
+          timeout: COMMAND_TIMEOUT_MS,
+          maxBuffer: 10 * 1024 * 1024,
+        });
         return truncate(stdout + (stderr ? `\n[stderr]\n${stderr}` : '')) || '(no output)';
       } catch (err) {
         const e = err as { stdout?: string; stderr?: string; message?: string };
-        return truncate(`command failed: ${e.message ?? String(err)}\n${e.stdout ?? ''}\n${e.stderr ?? ''}`);
+        return truncate(
+          `command failed: ${e.message ?? String(err)}\n${e.stdout ?? ''}\n${e.stderr ?? ''}`,
+        );
       }
     },
   }),
@@ -59,7 +67,8 @@ export const executionTools: ToolSet = {
     },
   }),
   write_file: tool({
-    description: 'Create or overwrite a text file in the repo, given a path relative to the repo root. Creates parent directories as needed.',
+    description:
+      'Create or overwrite a text file in the repo, given a path relative to the repo root. Creates parent directories as needed.',
     inputSchema: z.object({ path: z.string(), content: z.string() }),
     execute: async ({ path, content }) => {
       try {

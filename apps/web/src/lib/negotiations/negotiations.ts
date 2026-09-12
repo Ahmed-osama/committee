@@ -29,7 +29,12 @@ export async function startNegotiation(buyerId: string, listingId: string, offer
   assertPositiveInteger(offerPriceEgp, 'offerPriceEgp must be a positive whole number');
 
   return pooledDb.transaction(async (tx) => {
-    const [listing] = await tx.select().from(listings).where(eq(listings.id, listingId)).for('update').limit(1);
+    const [listing] = await tx
+      .select()
+      .from(listings)
+      .where(eq(listings.id, listingId))
+      .for('update')
+      .limit(1);
     if (!listing || listing.status !== 'active') {
       throw new ListingNotAvailableError('listing is not available for negotiation');
     }
@@ -40,10 +45,18 @@ export async function startNegotiation(buyerId: string, listingId: string, offer
     const [existingOpen] = await tx
       .select()
       .from(negotiations)
-      .where(and(eq(negotiations.listingId, listingId), eq(negotiations.buyerId, buyerId), eq(negotiations.status, 'open')))
+      .where(
+        and(
+          eq(negotiations.listingId, listingId),
+          eq(negotiations.buyerId, buyerId),
+          eq(negotiations.status, 'open'),
+        ),
+      )
       .limit(1);
     if (existingOpen) {
-      throw new NegotiationAlreadyOpenError('an open negotiation already exists between this buyer and listing');
+      throw new NegotiationAlreadyOpenError(
+        'an open negotiation already exists between this buyer and listing',
+      );
     }
 
     const [negotiation] = await tx
@@ -96,11 +109,17 @@ export async function respondToNegotiation(
     } else if (negotiation.sellerId === actorUserId) {
       actor = 'seller';
     } else {
-      throw new NotNegotiationPartyError('only the buyer or seller on this negotiation may act on it');
+      throw new NotNegotiationPartyError(
+        'only the buyer or seller on this negotiation may act on it',
+      );
     }
 
     const next = applyNegotiationAction(
-      { status: negotiation.status, currentPriceEgp: negotiation.currentPriceEgp, turn: negotiation.turn },
+      {
+        status: negotiation.status,
+        currentPriceEgp: negotiation.currentPriceEgp,
+        turn: negotiation.turn,
+      },
       actor,
       action,
       counterPriceEgp,
@@ -108,7 +127,12 @@ export async function respondToNegotiation(
 
     const [updated] = await tx
       .update(negotiations)
-      .set({ status: next.status, currentPriceEgp: next.currentPriceEgp, turn: next.turn, updatedAt: new Date() })
+      .set({
+        status: next.status,
+        currentPriceEgp: next.currentPriceEgp,
+        turn: next.turn,
+        updatedAt: new Date(),
+      })
       .where(eq(negotiations.id, negotiationId))
       .returning();
 
@@ -137,7 +161,11 @@ export async function respondToNegotiation(
 }
 
 export async function getNegotiationWithEvents(negotiationId: string) {
-  const [negotiation] = await pooledDb.select().from(negotiations).where(eq(negotiations.id, negotiationId)).limit(1);
+  const [negotiation] = await pooledDb
+    .select()
+    .from(negotiations)
+    .where(eq(negotiations.id, negotiationId))
+    .limit(1);
   if (!negotiation) {
     return null;
   }

@@ -7,7 +7,12 @@
 // this keeps a plain `digest` run from touching committee's real db file.
 process.env.COMMITTEE_DB_PATH ??= ':memory:';
 
-import { generateForAgent, rotateProviderOrder, SHARED_MODEL_BY_PROVIDER, type AgentConfig } from '@committee/core';
+import {
+  generateForAgent,
+  rotateProviderOrder,
+  SHARED_MODEL_BY_PROVIDER,
+  type AgentConfig,
+} from '@committee/core';
 import { appendHistory } from './history.js';
 
 // AgentRole has no generic "single-purpose worker" option (see FRICTION.md #4) — 'reviewer'
@@ -18,7 +23,7 @@ const digestAgent: AgentConfig = {
   role: 'reviewer',
   systemPrompt:
     'You write a short digest (3-5 sentences) on the given topic: what it is and why it ' +
-    "matters, for someone with no prior context. No headings, no bullet points, just prose.",
+    'matters, for someone with no prior context. No headings, no bullet points, just prose.',
   providerPreference: rotateProviderOrder(0),
   modelByProvider: SHARED_MODEL_BY_PROVIDER,
   toolAllowList: [],

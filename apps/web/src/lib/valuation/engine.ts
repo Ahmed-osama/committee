@@ -24,7 +24,11 @@ export async function getValuationCells(): Promise<ValuationCell[]> {
   return computeValuationCells(rows);
 }
 
-export async function getValuationForListing(zone: string, propertyType: string, areaSqm: number): Promise<ValuationCell | null> {
+export async function getValuationForListing(
+  zone: string,
+  propertyType: string,
+  areaSqm: number,
+): Promise<ValuationCell | null> {
   const cells = await getValuationCells();
   return findValuationForListing(cells, zone, propertyType, areaSqm);
 }

@@ -7,7 +7,15 @@
     "title": "GroundTruth",
     "description": "Scaffolding in progress — see docs/projects/groundtruth.md.",
     "browseListings": "Browse listings",
-    "viewDealFeed": "See real closed deals"
+    "viewDealFeed": "See real closed deals",
+    "tagline": "Buy and sell land and property, honestly.",
+    "browseByType": "Browse by type"
+  },
+  "Nav": {
+    "home": "Home",
+    "listings": "Listings",
+    "deals": "Real deals",
+    "account": "Account"
   },
   "Login": {
     "title": "Sign in",

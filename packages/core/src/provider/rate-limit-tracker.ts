@@ -16,7 +16,13 @@ function countCallsSince(providerId: string, modelId: string, sinceIso: string):
   const row = db
     .select({ count: sql<number>`count(*)` })
     .from(providerCalls)
-    .where(and(eq(providerCalls.providerId, providerId), eq(providerCalls.modelId, modelId), gte(providerCalls.createdAt, sinceIso)))
+    .where(
+      and(
+        eq(providerCalls.providerId, providerId),
+        eq(providerCalls.modelId, modelId),
+        gte(providerCalls.createdAt, sinceIso),
+      ),
+    )
     .get();
   return row?.count ?? 0;
 }
@@ -25,9 +31,15 @@ export function getRateLimitStatus(providerId: string, modelId: string): RateLim
   const config = getRateLimitConfig(providerId, modelId);
   const now = Date.now();
   const rpmUsed = countCallsSince(providerId, modelId, new Date(now - 60_000).toISOString());
-  const rpdUsed = countCallsSince(providerId, modelId, new Date(now - 24 * 60 * 60_000).toISOString());
+  const rpdUsed = countCallsSince(
+    providerId,
+    modelId,
+    new Date(now - 24 * 60 * 60_000).toISOString(),
+  );
 
-  const availableNow = (config.rpm === undefined || rpmUsed < config.rpm) && (config.rpd === undefined || rpdUsed < config.rpd);
+  const availableNow =
+    (config.rpm === undefined || rpmUsed < config.rpm) &&
+    (config.rpd === undefined || rpdUsed < config.rpd);
 
   return { availableNow, rpmUsed, rpmLimit: config.rpm, rpdUsed, rpdLimit: config.rpd };
 }

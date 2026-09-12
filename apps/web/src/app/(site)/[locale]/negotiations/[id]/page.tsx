@@ -9,7 +9,11 @@ import { respondToNegotiationAction } from './actions';
 // Direct DB query, no DB at build time in this repo — see listings/page.tsx's comment.
 export const dynamic = 'force-dynamic';
 
-export default async function NegotiationDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function NegotiationDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const t = await getTranslations('Negotiations');
   const session = await getSession();
@@ -29,8 +33,11 @@ export default async function NegotiationDetailPage({ params }: { params: Promis
     notFound();
   }
 
-  const myTurn = negotiation.status === 'open' && ((isBuyer && negotiation.turn === 'buyer') || (isSeller && negotiation.turn === 'seller'));
-  const deal = negotiation.status === 'accepted' ? await getDealByNegotiationId(negotiation.id) : null;
+  const myTurn =
+    negotiation.status === 'open' &&
+    ((isBuyer && negotiation.turn === 'buyer') || (isSeller && negotiation.turn === 'seller'));
+  const deal =
+    negotiation.status === 'accepted' ? await getDealByNegotiationId(negotiation.id) : null;
 
   return (
     <main>

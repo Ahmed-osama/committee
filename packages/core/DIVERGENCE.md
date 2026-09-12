@@ -18,7 +18,7 @@ calls. Retrievable later via the web viewer (SSE from `EventBus`).
 Its history (`apps/digest/src/history.ts`) is a flat JSON array append-log: `{ topic,
 digest, at }`. No relations, no status, no per-turn anything.
 
-**Divergence:** App 1's need is inherently relational (a conversation *is* a sequence of
+**Divergence:** App 1's need is inherently relational (a conversation _is_ a sequence of
 turns with state transitions); App 2's need is "remember what happened," full stop — a
 flat log already satisfies it completely. A shared `SessionStore` abstraction would either
 have to be trivial enough (get/append a blob by id) that App 2 gains nothing over what it
@@ -27,7 +27,7 @@ need and shouldn't be made to carry.
 
 ## Model/provider routing
 
-**committee (App 1):** six roles, each seeded with a *different* provider preference order
+**committee (App 1):** six roles, each seeded with a _different_ provider preference order
 via `rotateProviderOrder(0..5)` (`agent-repo.ts`) — deliberate diversity so Planner/
 Architect/Skeptic/etc. aren't all hitting the same provider in the same debate. The
 diversity itself is load-bearing: it's part of why the committee's debate has genuinely
@@ -38,7 +38,7 @@ committee's Planner. There is no second role to differentiate from, so "diversit
 roles" isn't a concept App 2 has any use for; its only requirement is "some configured
 provider answers."
 
-**Divergence:** App 1's routing design assumes a *pool* of co-existing roles that benefit
+**Divergence:** App 1's routing design assumes a _pool_ of co-existing roles that benefit
 from being spread across providers. App 2 has exactly one role and no such need. An
 `LLMClient`-style abstraction extracted from App 1 alone would likely bake in the
 multi-role-diversity assumption where App 2 needs none of it — that's exactly the kind of
@@ -47,7 +47,7 @@ premature generalization this initiative is trying to avoid (see root `CLAUDE.md
 
 ## What this means for COM-12
 
-Both divergences point the same way: the two apps' actual session/routing *shapes* are too
+Both divergences point the same way: the two apps' actual session/routing _shapes_ are too
 different for a shared abstraction beyond the narrow, already-duplicated pieces
 `FRICTION.md` flagged as safe (`generateForAgent`, `SHARED_MODEL_BY_PROVIDER` — both apps
 independently re-derive the exact same low-level call chain today, which is the concrete,

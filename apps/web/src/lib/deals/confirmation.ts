@@ -15,9 +15,15 @@ export type DealConfirmationState = {
 // already closed) is a no-op that returns the same timestamps — see deals.ts's
 // "promise once, receipt once" note. `now` is injected so this stays deterministic
 // under test rather than reading the clock itself.
-export function applyConfirmation(state: DealConfirmationState, actor: 'buyer' | 'seller', now: Date): DealConfirmationState {
-  const buyerConfirmedAt = actor === 'buyer' ? (state.buyerConfirmedAt ?? now) : state.buyerConfirmedAt;
-  const sellerConfirmedAt = actor === 'seller' ? (state.sellerConfirmedAt ?? now) : state.sellerConfirmedAt;
+export function applyConfirmation(
+  state: DealConfirmationState,
+  actor: 'buyer' | 'seller',
+  now: Date,
+): DealConfirmationState {
+  const buyerConfirmedAt =
+    actor === 'buyer' ? (state.buyerConfirmedAt ?? now) : state.buyerConfirmedAt;
+  const sellerConfirmedAt =
+    actor === 'seller' ? (state.sellerConfirmedAt ?? now) : state.sellerConfirmedAt;
   const status: DealStatus = buyerConfirmedAt && sellerConfirmedAt ? 'closed' : state.status;
 
   return { status, buyerConfirmedAt, sellerConfirmedAt };

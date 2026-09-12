@@ -50,7 +50,12 @@ export async function getListingWithPhotos(listingId: string) {
 
 export class NotListingOwnerError extends Error {}
 
-export async function addListingPhoto(listingId: string, sellerId: string, url: string, sortOrder: number) {
+export async function addListingPhoto(
+  listingId: string,
+  sellerId: string,
+  url: string,
+  sortOrder: number,
+) {
   const [listing] = await db.select().from(listings).where(eq(listings.id, listingId)).limit(1);
   if (!listing || listing.sellerId !== sellerId) {
     throw new NotListingOwnerError('listing not found or not owned by this seller');

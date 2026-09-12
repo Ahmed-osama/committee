@@ -81,7 +81,8 @@ const MIN_SKEPTIC_CHALLENGES = 2;
 const CLOSING_PHASE_FRACTION = 0.75;
 
 function formatTranscript(transcript: Message[], agents: AgentConfig[]): string {
-  const nameFor = (id: string) => (id === HUMAN_AGENT_ID ? 'You' : (agents.find((a) => a.id === id)?.name ?? id));
+  const nameFor = (id: string) =>
+    id === HUMAN_AGENT_ID ? 'You' : (agents.find((a) => a.id === id)?.name ?? id);
   return transcript.map((m) => `${nameFor(m.fromAgentId)}: ${m.content}`).join('\n\n');
 }
 
@@ -110,7 +111,10 @@ export function hasSkepticAgreed(transcript: Message[], skepticId: string | unde
 }
 
 /** How many real objections (non-agree turns) the skeptic has raised so far. */
-export function countSkepticChallenges(transcript: Message[], skepticId: string | undefined): number {
+export function countSkepticChallenges(
+  transcript: Message[],
+  skepticId: string | undefined,
+): number {
   if (!skepticId) return Infinity;
   return transcript.filter((m) => m.fromAgentId === skepticId && m.intent === 'challenge').length;
 }
@@ -134,7 +138,9 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function runPlanningSession(opts: PlanningSessionOptions): Promise<PlanningSessionResult> {
+export async function runPlanningSession(
+  opts: PlanningSessionOptions,
+): Promise<PlanningSessionResult> {
   const {
     conversationId,
     goal,
@@ -156,10 +162,13 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
   let agreementNote: string | undefined;
 
   const finalizeTool = tool({
-    description: 'Call this once the plan is genuinely settled and the skeptic has agreed — ends the conversation.',
+    description:
+      'Call this once the plan is genuinely settled and the skeptic has agreed — ends the conversation.',
     inputSchema: z.object({
       summary: z.string().describe('One-paragraph summary of the agreed plan'),
-      tasks: z.array(z.object({ title: z.string(), description: z.string() })).describe('The concrete task breakdown, in order'),
+      tasks: z
+        .array(z.object({ title: z.string(), description: z.string() }))
+        .describe('The concrete task breakdown, in order'),
     }),
     execute: (input) => {
       plan = input;
@@ -168,8 +177,11 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
   });
 
   const agreeTool = tool({
-    description: 'Call this once you have no further real objections — signals genuine agreement instead of speaking.',
-    inputSchema: z.object({ note: z.string().describe('Briefly why you are satisfied, not just "looks good"') }),
+    description:
+      'Call this once you have no further real objections — signals genuine agreement instead of speaking.',
+    inputSchema: z.object({
+      note: z.string().describe('Briefly why you are satisfied, not just "looks good"'),
+    }),
     execute: (input) => {
       agreementNote = input.note;
       return `Agreed: ${input.note}`;
@@ -177,19 +189,27 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
   });
 
   for (let turn = 0; turn < maxTurns; turn++) {
-    if (isStopRequested?.(conversationId)) return { finalized: false, turnsUsed: turn, stopped: true };
+    if (isStopRequested?.(conversationId))
+      return { finalized: false, turnsUsed: turn, stopped: true };
 
     if (isPaused?.(conversationId)) {
       onPausedChange?.(true);
       while (isPaused?.(conversationId)) {
-        if (isStopRequested?.(conversationId)) return { finalized: false, turnsUsed: turn, stopped: true };
+        if (isStopRequested?.(conversationId))
+          return { finalized: false, turnsUsed: turn, stopped: true };
         await sleep(500);
       }
       onPausedChange?.(false);
     }
 
     for (const content of pollInjected?.(conversationId) ?? []) {
-      const injected = sendMessage({ conversationId, fromAgentId: HUMAN_AGENT_ID, intent: 'human', content, turn: startTurn + turn });
+      const injected = sendMessage({
+        conversationId,
+        fromAgentId: HUMAN_AGENT_ID,
+        intent: 'human',
+        content,
+        turn: startTurn + turn,
+      });
       transcript.push(injected);
       onMessage?.(injected);
     }
@@ -202,9 +222,17 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
     const agent = agents[turn % agents.length];
     const isSkeptic = agent.id === skeptic?.id;
     const isClosingPhase = turn >= Math.floor(maxTurns * CLOSING_PHASE_FRACTION);
-    const canSkepticAgreeYet = isClosingPhase || countSkepticChallenges(currentRound, skeptic?.id) >= MIN_SKEPTIC_CHALLENGES;
-    const isFinalizer = agent.id === finalizerAgentId && canOfferFinalize(turn, agents.length) && hasSkepticAgreed(currentRound, skeptic?.id);
-    const tools: ToolSet = isFinalizer ? { finalize_plan: finalizeTool } : isSkeptic && canSkepticAgreeYet ? { agree: agreeTool } : {};
+    const canSkepticAgreeYet =
+      isClosingPhase || countSkepticChallenges(currentRound, skeptic?.id) >= MIN_SKEPTIC_CHALLENGES;
+    const isFinalizer =
+      agent.id === finalizerAgentId &&
+      canOfferFinalize(turn, agents.length) &&
+      hasSkepticAgreed(currentRound, skeptic?.id);
+    const tools: ToolSet = isFinalizer
+      ? { finalize_plan: finalizeTool }
+      : isSkeptic && canSkepticAgreeYet
+        ? { agree: agreeTool }
+        : {};
 
     const promptParts = [
       agent.systemPrompt,
@@ -213,7 +241,9 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
         ? `Conversation so far:\n\n${formatTranscript(transcript, agents)}`
         : '(You are speaking first — open with a concrete initial proposal, not a restatement of the goal.)',
       `Now speak as ${agent.name}. A few sentences, no filler.` +
-        (isFinalizer ? ' If the plan is genuinely settled, call finalize_plan instead of speaking.' : '') +
+        (isFinalizer
+          ? ' If the plan is genuinely settled, call finalize_plan instead of speaking.'
+          : '') +
         (isSkeptic && canSkepticAgreeYet
           ? isClosingPhase
             ? ' The debate is nearing its turn limit. Agree now unless there is a genuinely critical, unresolved issue — do not raise new minor objections at this stage.'
@@ -232,7 +262,13 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
     } catch {
       // no usable provider right now — the thinking notice just omits the provider badge
     }
-    onThinking?.({ agentId: agent.id, name: agent.name, role: agent.role, providerId: preview?.providerId, modelId: preview?.modelId });
+    onThinking?.({
+      agentId: agent.id,
+      name: agent.name,
+      role: agent.role,
+      providerId: preview?.providerId,
+      modelId: preview?.modelId,
+    });
 
     // Once the skeptic has genuinely agreed, the finalizer's only sanctioned action left is to
     // finalize — there's nothing legitimately still up for debate at that point. Forcing the tool
@@ -254,7 +290,9 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
 
     let generated: Awaited<ReturnType<typeof generateForAgent>>;
     try {
-      generated = await generateForAgent(agent, promptParts.join('\n\n'), tools, { toolChoice: forceToolChoice });
+      generated = await generateForAgent(agent, promptParts.join('\n\n'), tools, {
+        toolChoice: forceToolChoice,
+      });
     } catch (err) {
       // Every configured provider for this agent is exhausted or down right
       // now — skip its turn rather than aborting the whole conversation;
@@ -279,18 +317,41 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
       modelId,
       inputTokens: result.usage.inputTokens ?? 0,
       outputTokens: result.usage.outputTokens ?? 0,
-      costUsd: computeCostUsd(providerId, modelId, result.usage.inputTokens ?? 0, result.usage.outputTokens ?? 0),
+      costUsd: computeCostUsd(
+        providerId,
+        modelId,
+        result.usage.inputTokens ?? 0,
+        result.usage.outputTokens ?? 0,
+      ),
     });
 
     if (plan) {
-      const message = sendMessage({ conversationId, fromAgentId: agent.id, intent: 'finalize', content: plan.summary, payload: plan, providerId, modelId, turn: startTurn + turn });
+      const message = sendMessage({
+        conversationId,
+        fromAgentId: agent.id,
+        intent: 'finalize',
+        content: plan.summary,
+        payload: plan,
+        providerId,
+        modelId,
+        turn: startTurn + turn,
+      });
       onMessage?.(message);
       return { finalized: true, plan, turnsUsed: turn + 1 };
     }
 
     const content = agreementNote ?? (result.text.trim() || '(no response this turn)');
-    const intent: Message['intent'] = agreementNote !== undefined ? 'agree' : intentForRole(agent.role);
-    const message = sendMessage({ conversationId, fromAgentId: agent.id, intent, content, providerId, modelId, turn: startTurn + turn });
+    const intent: Message['intent'] =
+      agreementNote !== undefined ? 'agree' : intentForRole(agent.role);
+    const message = sendMessage({
+      conversationId,
+      fromAgentId: agent.id,
+      intent,
+      content,
+      providerId,
+      modelId,
+      turn: startTurn + turn,
+    });
     transcript.push(message);
     onMessage?.(message);
     agreementNote = undefined;
@@ -316,22 +377,47 @@ export async function runPlanningSession(opts: PlanningSessionOptions): Promise<
     } catch {
       // no usable provider right now — the thinking notice just omits the provider badge
     }
-    onThinking?.({ agentId: finalizer.id, name: finalizer.name, role: finalizer.role, providerId: preview?.providerId, modelId: preview?.modelId });
+    onThinking?.({
+      agentId: finalizer.id,
+      name: finalizer.name,
+      role: finalizer.role,
+      providerId: preview?.providerId,
+      modelId: preview?.modelId,
+    });
 
     try {
-      const { result, providerId, modelId } = await generateForAgent(finalizer, promptParts.join('\n\n'), { finalize_plan: finalizeTool }, {
-        toolChoice: { type: 'tool', toolName: 'finalize_plan' },
-      });
+      const { result, providerId, modelId } = await generateForAgent(
+        finalizer,
+        promptParts.join('\n\n'),
+        { finalize_plan: finalizeTool },
+        {
+          toolChoice: { type: 'tool', toolName: 'finalize_plan' },
+        },
+      );
       recordProviderCall({
         agentId: finalizer.id,
         providerId,
         modelId,
         inputTokens: result.usage.inputTokens ?? 0,
         outputTokens: result.usage.outputTokens ?? 0,
-        costUsd: computeCostUsd(providerId, modelId, result.usage.inputTokens ?? 0, result.usage.outputTokens ?? 0),
+        costUsd: computeCostUsd(
+          providerId,
+          modelId,
+          result.usage.inputTokens ?? 0,
+          result.usage.outputTokens ?? 0,
+        ),
       });
       if (plan) {
-        const message = sendMessage({ conversationId, fromAgentId: finalizer.id, intent: 'finalize', content: plan.summary, payload: plan, providerId, modelId, turn: startTurn + maxTurns });
+        const message = sendMessage({
+          conversationId,
+          fromAgentId: finalizer.id,
+          intent: 'finalize',
+          content: plan.summary,
+          payload: plan,
+          providerId,
+          modelId,
+          turn: startTurn + maxTurns,
+        });
         onMessage?.(message);
         return { finalized: true, plan, turnsUsed: maxTurns + 1 };
       }

@@ -15,7 +15,9 @@ export interface DigestEntry {
 }
 
 export function appendHistory(entry: DigestEntry): void {
-  const history: DigestEntry[] = existsSync(HISTORY_PATH) ? JSON.parse(readFileSync(HISTORY_PATH, 'utf8')) : [];
+  const history: DigestEntry[] = existsSync(HISTORY_PATH)
+    ? JSON.parse(readFileSync(HISTORY_PATH, 'utf8'))
+    : [];
   history.push(entry);
   writeFileSync(HISTORY_PATH, JSON.stringify(history, null, 2));
 }

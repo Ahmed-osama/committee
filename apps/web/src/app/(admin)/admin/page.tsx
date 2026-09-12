@@ -1,5 +1,9 @@
 import { requireAdminSession } from '@/app/api/_lib/session';
-import { getHighActivityBuyersWithNoClose, getPriceOutlierDeals, getRejectedKycSubmissions } from '@/lib/admin/moderation';
+import {
+  getHighActivityBuyersWithNoClose,
+  getPriceOutlierDeals,
+  getRejectedKycSubmissions,
+} from '@/lib/admin/moderation';
 
 // Direct DB queries, no DB at build time in this repo — see (site)'s listings/page.tsx
 // comment for the same reasoning.
@@ -37,7 +41,8 @@ export default async function AdminDashboardPage() {
           <ul>
             {rejectedKyc.map((row) => (
               <li key={row.id}>
-                {row.phone} — {row.rejectionReason ?? '(no reason recorded)'} — {row.createdAt.toISOString()}
+                {row.phone} — {row.rejectionReason ?? '(no reason recorded)'} —{' '}
+                {row.createdAt.toISOString()}
               </li>
             ))}
           </ul>
@@ -68,8 +73,8 @@ export default async function AdminDashboardPage() {
           <ul>
             {priceOutliers.map((row) => (
               <li key={row.dealId}>
-                Deal {row.dealId} — {row.pricePerSqmEgp.toLocaleString()} EGP/m² vs. a {row.cellAvgPricePerSqmEgp.toLocaleString()} EGP/m²
-                area average
+                Deal {row.dealId} — {row.pricePerSqmEgp.toLocaleString()} EGP/m² vs. a{' '}
+                {row.cellAvgPricePerSqmEgp.toLocaleString()} EGP/m² area average
               </li>
             ))}
           </ul>

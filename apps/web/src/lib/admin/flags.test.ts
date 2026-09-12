@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { isHighActivityNoClose, isPriceOutlier, PRICE_OUTLIER_RATIO, SUSPICIOUS_NEGOTIATION_COUNT_THRESHOLD } from './flags';
+import {
+  isHighActivityNoClose,
+  isPriceOutlier,
+  PRICE_OUTLIER_RATIO,
+  SUSPICIOUS_NEGOTIATION_COUNT_THRESHOLD,
+} from './flags';
 
 test('a buyer below the negotiation-count threshold is never flagged, even with zero closes', () => {
   assert.equal(isHighActivityNoClose(SUSPICIOUS_NEGOTIATION_COUNT_THRESHOLD - 1, 0), false);

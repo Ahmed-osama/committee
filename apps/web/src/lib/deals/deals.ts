@@ -48,6 +48,10 @@ export async function getDeal(dealId: string) {
 }
 
 export async function getDealByNegotiationId(negotiationId: string) {
-  const [deal] = await pooledDb.select().from(deals).where(eq(deals.negotiationId, negotiationId)).limit(1);
+  const [deal] = await pooledDb
+    .select()
+    .from(deals)
+    .where(eq(deals.negotiationId, negotiationId))
+    .limit(1);
   return deal ?? null;
 }

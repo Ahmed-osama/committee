@@ -20,6 +20,11 @@ export async function respondToNegotiationAction(formData: FormData): Promise<vo
   const counterPriceEgpRaw = formData.get('counterPriceEgp');
   const counterPriceEgp = counterPriceEgpRaw ? Number(counterPriceEgpRaw) : undefined;
 
-  await respondToNegotiation(session.userId, negotiationId, action as NegotiationAction, counterPriceEgp);
+  await respondToNegotiation(
+    session.userId,
+    negotiationId,
+    action as NegotiationAction,
+    counterPriceEgp,
+  );
   redirect(`/negotiations/${negotiationId}`);
 }

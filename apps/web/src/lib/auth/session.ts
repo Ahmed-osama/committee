@@ -36,7 +36,10 @@ export function verifySessionToken(token: string, secret: string): SessionPayloa
 
   const expectedSignature = Buffer.from(sign(data, secret));
   const actualSignature = Buffer.from(signature);
-  if (expectedSignature.length !== actualSignature.length || !timingSafeEqual(expectedSignature, actualSignature)) {
+  if (
+    expectedSignature.length !== actualSignature.length ||
+    !timingSafeEqual(expectedSignature, actualSignature)
+  ) {
     return null;
   }
 

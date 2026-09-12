@@ -33,7 +33,11 @@ export async function generateForAgent(
   prompt: string,
   tools: ToolSet,
   options: GenerateForAgentOptions = {},
-): Promise<{ result: Awaited<ReturnType<typeof generateText>>; providerId: string; modelId: string }> {
+): Promise<{
+  result: Awaited<ReturnType<typeof generateText>>;
+  providerId: string;
+  modelId: string;
+}> {
   let lastError: unknown;
   for (let attempt = 0; attempt < agent.providerPreference.length; attempt++) {
     const { providerId, modelId } = selectProvider(agent);

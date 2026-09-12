@@ -21,6 +21,7 @@ brokers would attempt (fake accounts, fabricated offers, fabricated deals).
 End users are typically farmers and older, less-educated residents of the town, not
 tech-native younger people (who are largely uninvolved in local real estate here).
 Every UI/flow decision should be checked against this:
+
 - Arabic-first, RTL, via `next-intl` — not an English UI with a translation layer bolted on.
   English copy exists for internal/dev purposes only.
 - Icon-first over text-first; voice notes over typed text wherever content is user-authored.
@@ -34,7 +35,8 @@ Every UI/flow decision should be checked against this:
 
 ## Anti-collusion mechanism (the actual product)
 
-This is what the platform is *for*, not an afterthought:
+This is what the platform is _for_, not an afterthought:
+
 - **Dual-party deal confirmation** — a deal only becomes "closed" once both buyer and
   seller independently confirm it happened; neither side's unilateral claim counts.
 - **Structured offer threads** — price offers/counters/accept/reject flow through a fixed
@@ -63,7 +65,7 @@ This is what the platform is *for*, not an afterthought:
 4. **Round 4** — mobile (React Native) deferred entirely out of MVP scope: `apps/web` +
    `packages/db` only, no premature package extraction. Dual-confirmation deal-closure
    was originally going to be its own deployable service (to isolate `SELECT ... FOR
-   UPDATE` lock contention from frontend traffic) — reversed back into the monolith once
+UPDATE` lock contention from frontend traffic) — reversed back into the monolith once
    zero-ops became a stated goal (COM-20, gate tracked at COM-28). Shared-package
    extraction (`packages/domain`, `packages/schema`, `packages/api-client`) happens as a
    dedicated sprint the day mobile work actually starts, not before (tripwire: COM-26).
@@ -86,23 +88,23 @@ for i18n/RTL.
 
 Build order, roughly sequential:
 
-| Issue | What | Priority |
-|---|---|---|
-| COM-14 | Repo/infra foundation: `apps/web` + `packages/db`, Neon + Vercel wiring | Urgent |
-| COM-15 | Vendor spike: confirm KYC + OTP actually support Egyptian IDs/numbers | Urgent |
-| COM-16 | Arabic/English i18n foundation (`next-intl`) + RTL layout primitives | High |
-| COM-17 | Listings, photo upload, browsing/detail pages | Urgent |
-| COM-18 | Auth, KYC & compliance infrastructure (OTP registration, doc/selfie KYC, admin role gating, data-deletion rights) | Urgent |
-| COM-19 | Structured offer & negotiation thread state machine | Urgent |
-| COM-20 | Dual-confirmed deal closure, in-monolith transaction | High |
-| COM-21 | Pay-to-reveal paywall & credit ledger (Paymob) | Urgent |
-| COM-22 | Public anonymized deal feed | High |
-| COM-23 | Valuation engine — organic on-platform data only, suppressed until populated | High |
-| COM-24 | Admin anti-gaming & moderation dashboard (unlocalized, `/admin` outside `[locale]`) | Medium |
-| COM-25 | Arabic UI copy pass (every `next-intl` key translated, admin dashboard excluded) | Medium |
-| COM-26 | **Gate** — mobile app + shared-package extraction (tripwire, not work) | Low |
-| COM-27 | **Gate** — legal/liability review (fast-follow, before real money moves) | Medium |
-| COM-28 | **Gate** — split dual-confirmation into its own service (deferred, revisit under load) | Low |
+| Issue  | What                                                                                                              | Priority |
+| ------ | ----------------------------------------------------------------------------------------------------------------- | -------- |
+| COM-14 | Repo/infra foundation: `apps/web` + `packages/db`, Neon + Vercel wiring                                           | Urgent   |
+| COM-15 | Vendor spike: confirm KYC + OTP actually support Egyptian IDs/numbers                                             | Urgent   |
+| COM-16 | Arabic/English i18n foundation (`next-intl`) + RTL layout primitives                                              | High     |
+| COM-17 | Listings, photo upload, browsing/detail pages                                                                     | Urgent   |
+| COM-18 | Auth, KYC & compliance infrastructure (OTP registration, doc/selfie KYC, admin role gating, data-deletion rights) | Urgent   |
+| COM-19 | Structured offer & negotiation thread state machine                                                               | Urgent   |
+| COM-20 | Dual-confirmed deal closure, in-monolith transaction                                                              | High     |
+| COM-21 | Pay-to-reveal paywall & credit ledger (Paymob)                                                                    | Urgent   |
+| COM-22 | Public anonymized deal feed                                                                                       | High     |
+| COM-23 | Valuation engine — organic on-platform data only, suppressed until populated                                      | High     |
+| COM-24 | Admin anti-gaming & moderation dashboard (unlocalized, `/admin` outside `[locale]`)                               | Medium   |
+| COM-25 | Arabic UI copy pass (every `next-intl` key translated, admin dashboard excluded)                                  | Medium   |
+| COM-26 | **Gate** — mobile app + shared-package extraction (tripwire, not work)                                            | Low      |
+| COM-27 | **Gate** — legal/liability review (fast-follow, before real money moves)                                          | Medium   |
+| COM-28 | **Gate** — split dual-confirmation into its own service (deferred, revisit under load)                            | Low      |
 
 ## Go-to-market plan (Linear issues COM-29–COM-36)
 
@@ -181,7 +183,7 @@ real bundler bug along the way: neither Turbopack nor webpack remapped
 their real `.ts` files by default, so any route touching those packages 500'd with
 "Module not found" — invisible to `pnpm run typecheck`/`lint` (CI doesn't run `next
 build`), only caught by actually booting the dev server. Fixed via `transpilePackages`
-+ a webpack `resolve.extensionAlias`, with `apps/web` now pinned to `next dev/build
+plus a webpack `resolve.extensionAlias`, with `apps/web` now pinned to `next dev/build
 --webpack` since Turbopack (Next 16's default) has no equivalent option and was also
 nondeterministic while debugging this — see `apps/web/CLAUDE.md`'s "Bundler quirk"
 section, which flags this as a recurring-risk area for any future issue that adds a new
