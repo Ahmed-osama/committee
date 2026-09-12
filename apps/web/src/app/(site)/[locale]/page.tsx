@@ -1,8 +1,7 @@
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { BigLinkButton } from '@/components/big-button';
-import { CheckCircleIcon, HouseIcon } from '@/components/icons';
+import { CheckCircleIcon, ChevronIcon, HouseIcon } from '@/components/icons';
 import { IMAGE_CREDITS } from '@/components/image-credits';
 import { ImageAttribution } from '@/components/image-attribution';
 import { Logo } from '@/components/logo';
@@ -38,7 +37,7 @@ export default function HomePage() {
           <span className="flex-1 text-start text-lg">{t('browseListings')}</span>
         </BigLinkButton>
         <BigLinkButton href="/deals" variant="secondary" className="h-auto justify-start px-4 py-4">
-          <span className="flex h-8.5 w-8.5 items-center justify-center rounded-card bg-brand-light">
+          <span className="flex h-[34px] w-[34px] items-center justify-center rounded-card bg-brand-light">
             <CheckCircleIcon width={18} height={18} className="text-brand" />
           </span>
           <span className="flex-1 text-start text-lg">{t('viewDealFeed')}</span>
