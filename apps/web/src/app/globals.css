@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Low-literacy/older-audience baseline (see docs/projects/groundtruth.md's audience
+   section): larger-than-usual base text, generous line-height, and no reliance on
+   hover-only affordances since this is a touch-first audience on low-end phones. */
+html {
+  font-size: 18px;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  background: #FAFAF8;
+}

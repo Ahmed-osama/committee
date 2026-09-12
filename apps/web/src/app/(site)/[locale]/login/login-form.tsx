@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useState } from 'react';
+import { BigButton } from '@/components/big-button';
 
 type Step = { name: 'phone' } | { name: 'code'; requestId: string };
 
@@ -67,35 +68,49 @@ export function LoginForm() {
 
   if (step.name === 'phone') {
     return (
-      <form onSubmit={handleSendCode}>
-        <label>
-          {t('phoneLabel')}
-          <input
-            type="tel"
-            required
-            placeholder={t('phonePlaceholder')}
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-          />
-        </label>
-        <button type="submit" disabled={pending}>
+      <form onSubmit={handleSendCode} className="w-full max-w-sm">
+        <label className="mb-2 block text-lg font-semibold">{t('phoneLabel')}</label>
+        <input
+          type="tel"
+          required
+          placeholder={t('phonePlaceholder')}
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          dir="ltr"
+          className="mb-4 h-tap w-full rounded-xl border-2 border-black/15 px-4 text-center text-2xl tracking-wide"
+        />
+        <BigButton type="submit" disabled={pending} className="w-full">
           {t('sendCode')}
-        </button>
-        {error ? <p role="alert">{error}</p> : null}
+        </BigButton>
+        {error ? (
+          <p role="alert" className="mt-3 text-lg font-medium text-accent">
+            {error}
+          </p>
+        ) : null}
       </form>
     );
   }
 
   return (
-    <form onSubmit={handleVerifyCode}>
-      <label>
-        {t('codeLabel')}
-        <input type="text" required inputMode="numeric" value={code} onChange={(event) => setCode(event.target.value)} />
-      </label>
-      <button type="submit" disabled={pending}>
+    <form onSubmit={handleVerifyCode} className="w-full max-w-sm">
+      <label className="mb-2 block text-lg font-semibold">{t('codeLabel')}</label>
+      <input
+        type="text"
+        required
+        inputMode="numeric"
+        value={code}
+        onChange={(event) => setCode(event.target.value)}
+        dir="ltr"
+        className="mb-4 h-tap w-full rounded-xl border-2 border-black/15 px-4 text-center text-3xl tracking-[0.5em]"
+      />
+      <BigButton type="submit" disabled={pending} className="w-full">
         {t('verifyCode')}
-      </button>
-      {error ? <p role="alert">{error}</p> : null}
+      </BigButton>
+      {error ? (
+        <p role="alert" className="mt-3 text-lg font-medium text-accent">
+          {error}
+        </p>
+      ) : null}
     </form>
   );
 }
