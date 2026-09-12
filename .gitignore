@@ -8,4 +8,6 @@ committee.db
 committee.db-*
 .turbo/
 .next/
+.astro/
 apps/web/.data/
+.design-tmp/

@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const topics = await getCollection('architecture');
+const firstTopic = topics.sort((a, b) => a.data.order - b.data.order)[0];
+---
+
+<BaseLayout title="committee">
+  <header class="hero">
+    <h1>committee</h1>
+    <p>A small AI-agent "company." Give it one goal; a Planner, Architect, Skeptic
+    and friends hold a real, visible conversation to turn it into a
+    stress-tested plan — with Linear as the eventual system of record, not a
+    bespoke task database.</p>
+  </header>
+
+  <p>
+    This site is a curriculum, not a spec: each area of the repo
+    (<code>packages/core</code>, <code>packages/db</code>, <code>apps/*</code>,
+    the GroundTruth product) has its own ordered set of topics in the sidebar.
+    Start with <a href={`/architecture/${firstTopic.slug}`}>{firstTopic.data.title}</a>,
+    or browse the <a href="/journal">learning journal</a> for dated lessons pulled
+    from actual sessions in this repo.
+  </p>
+
+  <style>
+    header.hero { padding: 0 0 34px; border-bottom: 1px dashed #ddd6c4; margin-bottom: 34px; }
+    header.hero h1 { font-size: 44px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.01em; }
+    header.hero p { font-size: 16.5px; color: #444; max-width: 640px; margin: 0; }
+  </style>
+</BaseLayout>
