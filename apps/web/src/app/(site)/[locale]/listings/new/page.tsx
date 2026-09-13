@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { getSession } from '@/app/api/_lib/session';
 import { getLatestKycStatus } from '@/lib/auth/kyc-flow';
+import { BigLinkButton } from '@/components/big-button';
 import { LISTING_TYPES } from '@/lib/listings/validation';
 import { createListingAction } from './actions';
 
@@ -26,6 +27,7 @@ export default async function NewListingPage() {
       <main>
         <h1>{t('createTitle')}</h1>
         <p>{t('kycRequired')}</p>
+        <BigLinkButton href="/account/kyc">{t('startKyc')}</BigLinkButton>
       </main>
     );
   }

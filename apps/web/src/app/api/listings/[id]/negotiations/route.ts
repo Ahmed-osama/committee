@@ -16,6 +16,13 @@ export async function POST(
   if (!session) {
     return NextResponse.json({ error: 'authentication required' }, { status: 401 });
   }
+  // COM-35: operator accounts aren't meant to transact at all — rejected outright
+  // rather than relying only on incidental checks further down the call chain.
+  if (session.role === 'operator') {
+    return NextResponse.json({ error: 'operator accounts cannot open negotiations' }, {
+      status: 403,
+    });
+  }
 
   const { id: listingId } = await params;
   const body = (await request.json().catch(() => null)) as { offerPriceEgp?: unknown } | null;

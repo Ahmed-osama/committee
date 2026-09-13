@@ -29,10 +29,11 @@ export function ListingCard({ listing }: { listing: ListingCardData }) {
     <Link href={`/listings/${listing.id}`} className="block overflow-hidden rounded-card bg-white shadow-card">
       <div className="relative h-28 w-full bg-brand-light">
         <Image src={photoSrc} alt="" fill sizes="(max-width: 640px) 100vw, 480px" className="object-cover" />
-        {listing.photoUrl ? null : <ImageAttribution credit={credit} />}
+        {listing.photoUrl ? null : <ImageAttribution credit={credit} linked={false} />}
       </div>
       <div className="p-3">
         <p className="text-lg font-extrabold text-ink">{listing.priceEgp.toLocaleString()} EGP</p>
+        <p className="text-xs font-semibold text-faint">{t('askingPriceTag')}</p>
         <div className="mt-1 flex items-center gap-1.5">
           <TypeIcon width={13} height={13} className="text-faint" />
           <span className="text-sm font-semibold text-muted">

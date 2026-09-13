@@ -69,7 +69,8 @@ export function LoginForm() {
   if (step.name === 'phone') {
     return (
       <form onSubmit={handleSendCode} className="w-full max-w-sm">
-        <label className="mb-2 block text-lg font-semibold">{t('phoneLabel')}</label>
+        <p className="mb-9 text-sm text-muted">{t('subtitlePhone')}</p>
+        <label className="mb-2 block text-start text-base font-bold">{t('phoneLabel')}</label>
         <input
           type="tel"
           required
@@ -77,13 +78,13 @@ export function LoginForm() {
           value={phone}
           onChange={(event) => setPhone(event.target.value)}
           dir="ltr"
-          className="mb-4 h-tap w-full rounded-xl border-2 border-black/15 px-4 text-center text-2xl tracking-wide"
+          className="mb-4 h-tap w-full rounded-card border border-line px-4 text-center text-xl"
         />
         <BigButton type="submit" disabled={pending} className="w-full">
           {t('sendCode')}
         </BigButton>
         {error ? (
-          <p role="alert" className="mt-3 text-lg font-medium text-accent">
+          <p role="alert" className="mt-3 text-base font-medium text-red-700">
             {error}
           </p>
         ) : null}
@@ -93,7 +94,8 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleVerifyCode} className="w-full max-w-sm">
-      <label className="mb-2 block text-lg font-semibold">{t('codeLabel')}</label>
+      <p className="mb-9 text-sm text-muted">{t('subtitleCode')}</p>
+      <label className="mb-2 block text-start text-base font-bold">{t('codeLabel')}</label>
       <input
         type="text"
         required
@@ -101,13 +103,13 @@ export function LoginForm() {
         value={code}
         onChange={(event) => setCode(event.target.value)}
         dir="ltr"
-        className="mb-4 h-tap w-full rounded-xl border-2 border-black/15 px-4 text-center text-3xl tracking-[0.5em]"
+        className="mb-4 h-tap w-full rounded-card border border-line px-4 text-center text-2xl tracking-[0.4em]"
       />
       <BigButton type="submit" disabled={pending} className="w-full">
         {t('verifyCode')}
       </BigButton>
       {error ? (
-        <p role="alert" className="mt-3 text-lg font-medium text-accent">
+        <p role="alert" className="mt-3 text-base font-medium text-red-700">
           {error}
         </p>
       ) : null}

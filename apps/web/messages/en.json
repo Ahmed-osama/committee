@@ -8,7 +8,7 @@
     "description": "Scaffolding in progress — see docs/projects/groundtruth.md.",
     "browseListings": "Browse listings",
     "viewDealFeed": "See real closed deals",
-    "tagline": "Buy and sell land and property, honestly.",
+    "tagline": "Buy and sell your land and house, without a broker.",
     "browseByType": "Browse by type"
   },
   "Nav": {
@@ -18,7 +18,9 @@
     "account": "Account"
   },
   "Login": {
-    "title": "Sign in",
+    "title": "Sign in with your phone number",
+    "subtitlePhone": "We'll text you a 6-digit code",
+    "subtitleCode": "Enter the code we just sent you",
     "phoneLabel": "Phone number",
     "phonePlaceholder": "+201001234567",
     "sendCode": "Send code",
@@ -49,7 +51,27 @@
     "descriptionLabel": "Description",
     "submit": "Publish listing",
     "signInToCreate": "Sign in to publish a listing.",
-    "kycRequired": "Your ID verification must be approved before you can publish a listing."
+    "kycRequired": "Your ID verification must be approved before you can publish a listing.",
+    "startKyc": "Verify your ID",
+    "askingPriceTag": "Asking price — not sold yet"
+  },
+  "Kyc": {
+    "title": "ID verification",
+    "subtitle": "We need to confirm who you are before you can publish a listing.",
+    "signInRequired": "Sign in to verify your ID.",
+    "nationalIdLabel": "National ID number",
+    "documentFrontLabel": "ID card (front)",
+    "documentBackLabel": "ID card (back)",
+    "selfieLabel": "A photo of your face",
+    "documentRequired": "Add a photo of the front of your ID.",
+    "selfieRequired": "Add a photo of your face.",
+    "submit": "Submit for verification",
+    "submitError": "Couldn't submit your verification. Try again.",
+    "pending": "Your verification is being reviewed.",
+    "approved": "Your ID has been verified.",
+    "goToListing": "Publish a listing",
+    "rejected": "Your last submission wasn't accepted. Try again with clearer photos.",
+    "rejectedWithReason": "Your last submission wasn't accepted: {reason}"
   },
   "Negotiations": {
     "offerPriceLabel": "Your offer (EGP)",
@@ -104,7 +126,8 @@
   "DealFeed": {
     "title": "Real closed deals",
     "description": "Every deal here really happened — both the buyer and the seller confirmed it. No names, just zone, type, and price.",
-    "empty": "No closed deals yet."
+    "empty": "No closed deals yet.",
+    "soldTag": "Actually sold at this price"
   },
   "Valuation": {
     "label": "Typical price for this area",

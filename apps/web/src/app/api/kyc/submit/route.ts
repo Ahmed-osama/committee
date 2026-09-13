@@ -4,9 +4,9 @@ import { InvalidNationalIdError, submitKyc } from '@/lib/auth/kyc-flow';
 import { saveUploadedFile } from '@/lib/storage/local-file-storage';
 
 // multipart/form-data: `document` and `selfie` files, `nationalIdNumber` text field.
-// Requires an authenticated session — COM-17's listing creation depends on a
-// completed KYC submission existing for the seller, not on approval status alone
-// (see apps/web/CLAUDE.md).
+// Requires an authenticated session — COM-17's listing creation gates on
+// kyc.status === 'approved' specifically, not merely a submission existing
+// (see apps/web/CLAUDE.md's Listings section).
 export async function POST(request: Request): Promise<NextResponse> {
   const session = await getSession();
   if (!session) {

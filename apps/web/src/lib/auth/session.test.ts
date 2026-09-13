@@ -25,3 +25,11 @@ test('rejects malformed tokens', () => {
   assert.equal(verifySessionToken('not-a-token', 'secret'), null);
   assert.equal(verifySessionToken('', 'secret'), null);
 });
+
+// Regression: adding 'operator' (COM-35) to userRoleEnum without updating this
+// validation would silently reject every real operator's session token, since
+// verifySessionToken only ever accepted the literal roles it was told about.
+test('round-trips an operator session token', () => {
+  const token = createSessionToken({ userId: 'user-1', role: 'operator' }, 'secret');
+  assert.deepEqual(verifySessionToken(token, 'secret'), { userId: 'user-1', role: 'operator' });
+});

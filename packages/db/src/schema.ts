@@ -1,6 +1,11 @@
 import { integer, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 
-export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
+// 'operator' (COM-35) is deliberately a plain role value, not a separate table —
+// it's an account like any other (still phone-OTP-verified), just with a role that
+// unlocks the read-only (operator) route group instead of write access. This mirrors
+// how 'admin' already works: no self-serve path to either role, a manual DB update
+// until an invite flow exists (see requireAdminSession()'s doc comment).
+export const userRoleEnum = pgEnum('user_role', ['user', 'admin', 'operator']);
 
 // Real/distinct-person gating for the anti-collusion mechanism (see
 // docs/projects/groundtruth.md) — every account is phone-OTP-verified (COM-18) and
@@ -202,6 +207,45 @@ export const creditLedgerEntries = pgTable('credit_ledger_entries', {
   amount: integer('amount').notNull(),
   reason: creditLedgerReasonEnum('reason').notNull(),
   referenceId: text('reference_id').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// COM-35's canned-script constraint, enforced structurally: this is a fixed, seeded
+// set of pre-approved scripts an operator can "play" to a caller — there is
+// deliberately no free-text field anywhere in the operator UI, so the only way to
+// reference operator speech at all is by `id` from this table. Seed data lives in a
+// migration, not application code, so the set can't be silently extended by a code
+// change that skips review.
+export const cannedScripts = pgTable('canned_scripts', {
+  id: text('id').primaryKey(),
+  label: text('label').notNull(),
+  body: text('body').notNull(),
+});
+
+export const assistedChannelEnum = pgEnum('assisted_channel', [
+  'scout_witnessed',
+  'phone_operator',
+]);
+
+// Append-only audit trail for every assisted-mode interaction (COM-35). This table is
+// the actual acceptance criterion, not a nice-to-have: it exists so a human-assisted
+// action is always attributable to a specific operator, script, and moment, even
+// though — per COM-19/COM-20 — the row itself never grants the operator any power to
+// complete a negotiation or deal confirmation on the user's behalf.
+export const assistedSessionLogs = pgTable('assisted_session_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  // Cascade, matching every other FK to `users` here — this repo hard-deletes a
+  // user and everything tied to them for data-deletion rights (see
+  // apps/web/src/lib/auth/delete-account.ts); an operator's own deletion request
+  // must not be silently blocked by their past audit entries.
+  operatorId: uuid('operator_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  channel: assistedChannelEnum('channel').notNull(),
+  scriptId: text('script_id').references(() => cannedScripts.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

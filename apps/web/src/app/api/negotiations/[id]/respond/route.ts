@@ -22,6 +22,14 @@ export async function POST(
   if (!session) {
     return NextResponse.json({ error: 'authentication required' }, { status: 401 });
   }
+  // COM-35: an operator-role session must never be able to complete a negotiation
+  // action, even incidentally — rejected outright here rather than relying only on
+  // the party check below (operator accounts aren't meant to transact at all).
+  if (session.role === 'operator') {
+    return NextResponse.json({ error: 'operator accounts cannot respond to negotiations' }, {
+      status: 403,
+    });
+  }
 
   const { id: negotiationId } = await params;
   const body = (await request.json().catch(() => null)) as {

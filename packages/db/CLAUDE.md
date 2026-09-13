@@ -9,7 +9,10 @@ Drizzle/Postgres client for GroundTruth, wired to Neon. Consumed as `@committee/
   `users`) landed with COM-18 — see `apps/web/src/lib/auth/` for the flows that write
   them and `apps/web/CLAUDE.md` for the auth/KYC subsystem writeup. `listings` and
   `listing_photos` (both FK-cascade from their parent) landed with COM-17 — see
-  `apps/web/src/lib/listings/`.
+  `apps/web/src/lib/listings/`. `userRoleEnum` grew a third value, `operator`, plus
+  `canned_scripts` (seeded via the migration SQL itself, not app code) and
+  `assisted_session_logs` (both FKs to `users` cascade) with COM-35 — see
+  `apps/web/CLAUDE.md`'s assisted-mode section.
 - `src/index.ts` re-exports schema tables/enums **by name**, not `export * from
 './schema.js'` — apps/web's bundler (see its CLAUDE.md's "Bundler quirk" note)
   didn't reliably propagate a wildcard re-export's names when consuming this package.

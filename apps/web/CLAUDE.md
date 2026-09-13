@@ -18,7 +18,8 @@ product spec/audience/roadmap; this file is implementation-level detail for this
   (server-side message loading, wired into `next.config.js` via `next-intl/plugin`).
 - `src/proxy.ts` — Next 16 renamed the `middleware.ts` convention to `proxy.ts`; this is
   where `next-intl`'s locale-detection middleware runs. Its `matcher` explicitly excludes
-  `/admin` (COM-24's dashboard) — never let that route get a locale prefix.
+  `/admin` and `/operator` (COM-24/COM-35's dashboards) — never let either route get a
+  locale prefix.
 
 ## i18n / RTL (COM-16)
 
@@ -100,6 +101,25 @@ smoke test, not just a clean typecheck.
   Served back through `src/app/uploads/[filename]/route.ts`, gated behind any
   authenticated session (filenames are unguessable UUIDs, but that's not a substitute for
   real per-owner authorization).
+- `(site)/[locale]/account/kyc/` — the KYC document/selfie upload page (gap-fill, filed
+  as COM-49–53 under COM-18: COM-18 had been marked Done with `/api/kyc/submit` and its
+  storage working, but no UI anywhere could reach it, making COM-17's listing creation an
+  unreachable dead end for every real user). `page.tsx` shows the current
+  `getLatestKycStatus` state (none/pending/approved/rejected); `kyc-form.tsx` is a client
+  component posting multipart form data straight to `/api/kyc/submit`. Deliberately reuses
+  the existing local-file-storage private bucket rather than standing up real S3 now — see
+  COM-49's cancellation comment. `(site)/[locale]/listings/new` links here instead of
+  dead-ending on `kycRequired` text. `ID back` is captured in the form for a future vendor
+  integration (COM-53) but isn't sent yet — `/api/kyc/submit` only accepts one `document`
+  field.
+- `e2e/` + `playwright.config.ts` (COM-52) — Playwright, added specifically because
+  COM-18 was marked Done once while the KYC-upload-UI gap above silently existed;
+  `kyc-unblocks-listing.spec.ts` exercises the real browser path (login OTP -> KYC
+  submit -> approved -> listing form reachable) so that class of regression can't ship
+  silently again. Chromium-only (phone-first single-audience MVP, not a cross-browser
+  target). Run via `pnpm --filter @committee/web test:e2e` — needs a running dev server
+  and configured DB, so it's a separate script, not part of the cacheable Turbo `test`
+  task the way `src/**/*.test.ts` unit tests are.
 - `src/app/api/_lib/session.ts` — cookie-backed session (HMAC-signed, see
   `src/lib/auth/session.ts` for the signing itself) plus `requireAdminSession()` for
   admin-only routes. `SESSION_SECRET` (`.env.example`) must be a real random value per
@@ -321,6 +341,58 @@ credits` (balance + package list), listing detail page grows a reveal-contact
   Postgres, and the route itself via a dev-server smoke test (confirms Next's
   multiple-root-layouts support actually works for this `(admin)`/`(site)` split, not
   just typechecks).
+
+## Assisted-mode session logging + operator tool (COM-35)
+
+- `packages/db`'s `userRoleEnum` grew a third value, `operator` (alongside `user`/
+  `admin`) — a plain staff role, not a separate table, same no-self-serve-promotion
+  pattern as `admin` (manual DB update). `requireOperatorSession()`
+  (`src/app/api/_lib/session.ts`) mirrors `requireAdminSession()`.
+- **Bug fixed while adding this**: `src/lib/auth/session.ts`'s `SessionPayload` type
+  and `verifySessionToken`'s runtime validation both hardcoded `'user' | 'admin'` —
+  adding `operator` to the DB enum without updating this would have silently rejected
+  every operator's session token (`verifySessionToken` returns `null` on an unknown
+  role, indistinguishable from a forged/corrupt token). Covered by a regression test
+  in `session.test.ts`.
+- `packages/db`'s `canned_scripts` table is a fixed, seeded set (seed data lives in
+  the migration SQL itself, not application code) — the structural half of "no
+  free-form operator messaging"; the other half is that the `(operator)` UI has no
+  free-text field anywhere. `assisted_session_logs` is the append-only audit trail
+  (`userId`, `operatorId`, `channel`, `scriptId`, `createdAt`) — both FKs to `users`
+  cascade, so `delete-account.ts`'s hard-delete still works for an operator deleting
+  their own account, not just a caller.
+- `src/lib/operator/account-lookup.ts` (`findAccountByPhone`) and
+  `src/lib/operator/assisted-sessions.ts` (`logAssistedSession`, `listCannedScripts`)
+  — read-only queries plus the one write path (logging a script play). No function
+  here can open a negotiation, respond to one, or confirm a deal.
+- `(operator)/operator/` — third sibling root layout alongside `(site)`/`(admin)`,
+  same unlocalized-internal-tooling pattern as COM-24. `page.tsx` is a phone-number
+  lookup (GET query param) showing the caller's listings/negotiations/deals
+  read-only, plus a script-id dropdown (`actions.ts`'s `logScriptAction` server
+  action) that writes one `assisted_session_logs` row — `channel` is hardcoded to
+  `'phone_operator'` here; `'scout_witnessed'` belongs to the separate in-person GTM
+  scout flow (COM-31), not this tool.
+- **Structural exclusion, not just convention**: `POST /api/listings/[id]/negotiations`,
+  `POST /api/negotiations/[id]/respond`, and `POST /api/deals/[id]/confirm` each
+  reject a `role === 'operator'` session outright (403) before any other check. The
+  existing party check (`NotNegotiationPartyError`/`NotDealPartyError`) already
+  prevents an operator's own session from satisfying someone else's state machine
+  incidentally, since an operator is never the buyer/seller on record — this explicit
+  check is defense-in-depth stating the actual business rule (operator accounts don't
+  transact) rather than relying on that being true only by accident of the party check.
+- COM-24's admin dashboard grew a read-only "Assisted sessions" section
+  (`getRecentAssistedSessions` in `src/lib/admin/moderation.ts`) rather than a
+  separate compliance tool — same "human reviews, nothing acts automatically"
+  philosophy as the rest of that dashboard.
+- Dropped from the committee's original proposal: call-recording storage and a
+  recording-based compliance tool. Not in COM-35's actual acceptance criteria, and
+  real audio recording needs a consent/legal review this repo has explicitly
+  deferred (COM-27) — the audit-log-only design already satisfies every stated
+  criterion without it.
+- Verified end-to-end against a live dev server + real DB (not just typecheck/lint):
+  operator login, account lookup, script-play logging, the three endpoints' 403s, and
+  the admin dashboard picking up new entries. `e2e/operator-cannot-transact.spec.ts`
+  covers this via Playwright the same way COM-52 covers the KYC-unblock path.
 
 ## Arabic UI copy pass (COM-25)
 

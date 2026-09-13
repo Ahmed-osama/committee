@@ -10,6 +10,12 @@ export async function POST(
   if (!session) {
     return NextResponse.json({ error: 'authentication required' }, { status: 401 });
   }
+  // COM-35: an operator-role session must never be able to confirm a deal on a
+  // user's behalf, even incidentally — rejected outright here, not just via the
+  // party check below (operator accounts aren't meant to transact at all).
+  if (session.role === 'operator') {
+    return NextResponse.json({ error: 'operator accounts cannot confirm deals' }, { status: 403 });
+  }
 
   const { id: dealId } = await params;
 

@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { BigLinkButton } from '@/components/big-button';
+import { CheckCircleIcon, PlusIcon } from '@/components/icons';
 import { ListingCard } from '@/components/listing-card';
 import { PageShell } from '@/components/page-shell';
 import { isListingType } from '@/lib/listings/validation';
@@ -28,42 +28,46 @@ export default async function ListingsPage({
   return (
     <PageShell>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('browseTitle')}</h1>
-        <BigLinkButton href="/listings/new" variant="primary" className="h-11 px-4 text-base">
-          + {t('newListing')}
-        </BigLinkButton>
+        <h1 className="text-xl font-extrabold">{t('browseTitle')}</h1>
+        <Link
+          href="/listings/new"
+          className="flex items-center gap-1.5 rounded bg-brand px-3.5 py-2 text-sm font-bold text-white"
+        >
+          <PlusIcon width={15} height={15} />
+          {t('newListing')}
+        </Link>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex gap-2 overflow-x-auto">
         <Link
-          href="/listings"
-          className={`rounded-full border-2 px-4 py-2 text-base font-medium ${
-            !propertyType
-              ? 'border-brand bg-brand text-white'
-              : 'border-black/15 bg-white text-black/70'
+          href={{ pathname: '/listings', hash: 'results' }}
+          className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded px-4 py-2 text-sm font-bold ${
+            !propertyType ? 'bg-brand text-white' : 'bg-[#F1F0EC] text-muted'
           }`}
         >
-          {t('typeLabel')}: {propertyType ? '' : '✓'}
+          {!propertyType ? <CheckCircleIcon width={14} height={14} /> : null}
+          {t('typeLabel')}
         </Link>
         {FILTER_TYPES.map((type) => (
           <Link
             key={type}
-            href={{ pathname: '/listings', query: { propertyType: type } }}
-            className={`rounded-full border-2 px-4 py-2 text-base font-medium ${
-              propertyType === type
-                ? 'border-brand bg-brand text-white'
-                : 'border-black/15 bg-white text-black/70'
+            href={{ pathname: '/listings', query: { propertyType: type }, hash: 'results' }}
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded px-4 py-2 text-sm font-bold ${
+              propertyType === type ? 'bg-brand text-white' : 'bg-[#F1F0EC] text-muted'
             }`}
           >
+            {propertyType === type ? <CheckCircleIcon width={14} height={14} /> : null}
             {t(`type.${type}`)}
           </Link>
         ))}
       </div>
 
       {listings.length === 0 ? (
-        <p className="rounded-2xl bg-white p-6 text-center text-lg text-black/60">{t('empty')}</p>
+        <p id="results" className="scroll-mt-4 rounded-card bg-white p-6 text-center text-base text-muted shadow-card">
+          {t('empty')}
+        </p>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div id="results" className="grid scroll-mt-4 grid-cols-2 gap-3">
           {listings.map((listing) => (
             <ListingCard
               key={listing.id}

@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export type SessionPayload = {
   userId: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'operator';
 };
 
 // TODO(human): SESSION_SECRET must be a real random secret in every deployed
@@ -51,7 +51,7 @@ export function verifySessionToken(token: string, secret: string): SessionPayloa
       'userId' in parsed &&
       'role' in parsed &&
       typeof (parsed as SessionPayload).userId === 'string' &&
-      ((parsed as SessionPayload).role === 'user' || (parsed as SessionPayload).role === 'admin')
+      ['user', 'admin', 'operator'].includes((parsed as SessionPayload).role)
     ) {
       return parsed as SessionPayload;
     }

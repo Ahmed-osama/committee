@@ -11,3 +11,6 @@ committee.db-*
 .astro/
 apps/web/.data/
 .design-tmp/
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/playwright/.cache/

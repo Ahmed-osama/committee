@@ -24,24 +24,28 @@ export default function HomePage() {
         <Logo size={32} />
         <span className="text-base font-bold text-muted">GroundTruth</span>
       </div>
-      <h1 className="mb-5 text-2xl font-extrabold leading-snug tracking-tight">{t('title')}</h1>
+      <h1 className="mb-5 text-2xl font-extrabold leading-snug tracking-tight">{t('tagline')}</h1>
 
-      <div className="relative -mx-4 mb-5 h-36 overflow-hidden rounded-media">
+      <div className="relative mb-5 h-36 overflow-hidden rounded-media">
         <Image src={IMAGE_CREDITS.hero.src} alt="" fill sizes="100vw" className="object-cover" priority />
         <ImageAttribution credit={IMAGE_CREDITS.hero} />
       </div>
 
       <div className="mb-7 flex flex-col gap-2.5">
-        <BigLinkButton href="/listings" variant="primary" className="h-auto justify-start px-4 py-4">
+        <Link href="/listings" className="flex items-center gap-3.5 rounded-card bg-brand px-4 py-4 text-white">
           <HouseIcon width={24} height={24} />
-          <span className="flex-1 text-start text-lg">{t('browseListings')}</span>
-        </BigLinkButton>
-        <BigLinkButton href="/deals" variant="secondary" className="h-auto justify-start px-4 py-4">
+          <span className="flex-1 text-lg font-bold">{t('browseListings')}</span>
+          <ChevronIcon width={18} height={18} className="rtl:rotate-180" />
+        </Link>
+        <Link
+          href="/deals"
+          className="flex items-center gap-3.5 rounded-card border border-line bg-white px-4 py-4 text-ink"
+        >
           <span className="flex h-[34px] w-[34px] items-center justify-center rounded-card bg-brand-light">
             <CheckCircleIcon width={18} height={18} className="text-brand" />
           </span>
-          <span className="flex-1 text-start text-lg">{t('viewDealFeed')}</span>
-        </BigLinkButton>
+          <span className="flex-1 text-lg font-bold">{t('viewDealFeed')}</span>
+        </Link>
       </div>
 
       <h2 className="mb-3 text-sm font-bold text-muted">{t('browseByType')}</h2>

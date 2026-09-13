@@ -1,5 +1,14 @@
-import { db, deals, kycVerifications, listings, negotiations, users } from '@committee/db';
-import { desc, eq, inArray, sql } from 'drizzle-orm';
+import {
+  assistedSessionLogs,
+  cannedScripts,
+  db,
+  deals,
+  kycVerifications,
+  listings,
+  negotiations,
+  users,
+} from '@committee/db';
+import { aliasedTable, desc, eq, inArray, sql } from 'drizzle-orm';
 import { getValuationCells } from '@/lib/valuation/engine';
 import { findValuationForListing } from '@/lib/valuation/valuation';
 import { isHighActivityNoClose, isPriceOutlier } from './flags';
@@ -97,4 +106,28 @@ export async function getPriceOutlierDeals() {
     }
     return [{ dealId: row.dealId, pricePerSqmEgp, cellAvgPricePerSqmEgp: cell.avgPricePerSqmEgp }];
   });
+}
+
+// Read-only view of COM-35's audit trail — the same "human reviews, nothing here
+// acts automatically" philosophy as the rest of this dashboard. Extends the existing
+// admin dashboard rather than standing up a separate compliance tool, per COM-65.
+export async function getRecentAssistedSessions(limit = 50) {
+  const callers = aliasedTable(users, 'callers');
+  const operators = aliasedTable(users, 'operators');
+
+  return db
+    .select({
+      id: assistedSessionLogs.id,
+      callerPhone: callers.phone,
+      operatorPhone: operators.phone,
+      channel: assistedSessionLogs.channel,
+      scriptLabel: cannedScripts.label,
+      createdAt: assistedSessionLogs.createdAt,
+    })
+    .from(assistedSessionLogs)
+    .innerJoin(callers, eq(assistedSessionLogs.userId, callers.id))
+    .innerJoin(operators, eq(assistedSessionLogs.operatorId, operators.id))
+    .leftJoin(cannedScripts, eq(assistedSessionLogs.scriptId, cannedScripts.id))
+    .orderBy(desc(assistedSessionLogs.createdAt))
+    .limit(limit);
 }

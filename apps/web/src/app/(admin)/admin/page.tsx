@@ -2,6 +2,7 @@ import { requireAdminSession } from '@/app/api/_lib/session';
 import {
   getHighActivityBuyersWithNoClose,
   getPriceOutlierDeals,
+  getRecentAssistedSessions,
   getRejectedKycSubmissions,
 } from '@/lib/admin/moderation';
 
@@ -22,10 +23,11 @@ export default async function AdminDashboardPage() {
     );
   }
 
-  const [rejectedKyc, highActivityBuyers, priceOutliers] = await Promise.all([
+  const [rejectedKyc, highActivityBuyers, priceOutliers, assistedSessions] = await Promise.all([
     getRejectedKycSubmissions(),
     getHighActivityBuyersWithNoClose(),
     getPriceOutlierDeals(),
+    getRecentAssistedSessions(),
   ]);
 
   return (
@@ -75,6 +77,23 @@ export default async function AdminDashboardPage() {
               <li key={row.dealId}>
                 Deal {row.dealId} — {row.pricePerSqmEgp.toLocaleString()} EGP/m² vs. a{' '}
                 {row.cellAvgPricePerSqmEgp.toLocaleString()} EGP/m² area average
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2>Assisted sessions (COM-35)</h2>
+        <p>Every phone/scout-assisted interaction, for audit — read-only.</p>
+        {assistedSessions.length === 0 ? (
+          <p>None.</p>
+        ) : (
+          <ul>
+            {assistedSessions.map((row) => (
+              <li key={row.id}>
+                {row.createdAt.toISOString()} — caller {row.callerPhone} — operator{' '}
+                {row.operatorPhone} — {row.channel} — {row.scriptLabel ?? '(no script recorded)'}
               </li>
             ))}
           </ul>

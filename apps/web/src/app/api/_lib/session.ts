@@ -38,3 +38,13 @@ export async function requireAdminSession(): Promise<SessionPayload | null> {
   const session = await getSession();
   return session?.role === 'admin' ? session : null;
 }
+
+// Operator role gating (COM-35), same shape as requireAdminSession: no self-serve
+// path to 'operator' either, a manual DB update for now. Operator accounts are
+// staff-only and never a transacting party — see isOperatorSession's use in the
+// negotiation/deal endpoints, which reject an operator-role session outright rather
+// than relying only on the incidental protection of the party check.
+export async function requireOperatorSession(): Promise<SessionPayload | null> {
+  const session = await getSession();
+  return session?.role === 'operator' ? session : null;
+}

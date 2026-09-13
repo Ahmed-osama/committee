@@ -4,6 +4,9 @@ export { db, pooledDb } from './client.js';
 // across the workspace-package boundary; explicit names also match this repo's
 // "named exports only" convention (docs/CODING_STYLE.md).
 export {
+  assistedChannelEnum,
+  assistedSessionLogs,
+  cannedScripts,
   contactReveals,
   creditLedgerEntries,
   creditLedgerReasonEnum,

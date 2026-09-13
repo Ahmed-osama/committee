@@ -266,3 +266,32 @@ section.
 COM-26/COM-27/COM-28 remain pending gates (mobile + shared-package extraction, legal/
 liability review, splitting dual-confirmation into its own service) — not attempted here,
 tracked as tripwires per the roadmap table above.
+
+## Post-COM-25 gap-fill and UX findings (COM-37–53)
+
+Two things surfaced after the original COM-14–25 roadmap was marked done, both filed as
+new issues rather than reopening the old ones:
+
+- **KYC upload was an unreachable dead end.** COM-18 shipped `/api/kyc/submit` and
+  private-bucket storage, but no page ever called it — every seller hit a static
+  "verification required" message with no way forward. Filed as COM-49–53 under COM-18.
+  COM-50 (capture/upload form, `(site)/[locale]/account/kyc/`) and COM-51 (route guard +
+  secure document proxy) are done — see `apps/web/CLAUDE.md`'s "Auth, KYC & compliance"
+  section. COM-49 (real S3 storage) was **canceled**: reuses the existing local-disk
+  private-bucket pattern instead, since standing up real AWS credentials wasn't needed to
+  unblock the flow (revisit as its own task closer to deploy). **Founder decision
+  (2026-09-13): KYC approval starts as manual admin review via the existing COM-24 admin
+  queue for the first micro-zone** — sellers are personally known to the founder per the
+  GTM plan below, so live vendor sandbox validation (COM-53) is deferred as a fast-follow,
+  same treatment as COM-27. COM-52 (Playwright E2E covering login → KYC → approval →
+  unblocked listing creation) is still open — this is what actually proved the COM-18 gap
+  existed, so it stays open as the regression guard for this exact class of bug.
+- **Two UX bugs from a 5-persona simulated user test** (5 Egyptian personas, each a
+  different LLM provider, driving a real browser against the live app for ~5 min):
+  COM-37 (visitors couldn't tell an asking price from an actually-closed price on the
+  deal feed / listing cards — undermines the core "real deals, not broker opinion"
+  pitch) and COM-38 (tapping an already-active listing filter gave no visible feedback,
+  a dead end for a low-literacy persona). Both fixed: listing cards/detail pages and the
+  deal feed now carry an explicit "asking price — not sold yet" / "actually sold at this
+  price" tag; filter chips show a check icon when active and jump to `#results` on tap
+  so something visibly happens even when the grid contents look similar.
