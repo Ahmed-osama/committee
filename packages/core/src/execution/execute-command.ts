@@ -1,7 +1,10 @@
 import { stepCountIs } from 'ai';
 import type { AgentConfig } from '../domain/agent.js';
 import { HUMAN_AGENT_ID, type Message } from '../domain/message.js';
-import { getConversationTranscript, sendMessage } from '../persistence/repositories/message-repo.js';
+import {
+  getConversationTranscript,
+  sendMessage,
+} from '../persistence/repositories/message-repo.js';
 import { generateForAgent } from '../provider/generate-for-agent.js';
 import { computeCostUsd } from '../provider/pricing.js';
 import { recordProviderCall } from '../provider/rate-limit-tracker.js';
@@ -22,10 +25,21 @@ export interface ExecutionTurnResult {
  * on purpose: this is execution, triggered one command at a time by a human,
  * not multi-agent deliberation.
  */
-export async function runExecutionTurn(opts: { conversationId: string; agent: AgentConfig; command: string; turn: number }): Promise<ExecutionTurnResult> {
+export async function runExecutionTurn(opts: {
+  conversationId: string;
+  agent: AgentConfig;
+  command: string;
+  turn: number;
+}): Promise<ExecutionTurnResult> {
   const { conversationId, agent, command, turn } = opts;
 
-  const humanMessage = sendMessage({ conversationId, fromAgentId: HUMAN_AGENT_ID, intent: 'human', content: command, turn });
+  const humanMessage = sendMessage({
+    conversationId,
+    fromAgentId: HUMAN_AGENT_ID,
+    intent: 'human',
+    content: command,
+    turn,
+  });
 
   const history = getConversationTranscript(conversationId)
     .map((m) => `${m.fromAgentId === HUMAN_AGENT_ID ? 'Human' : m.fromAgentId}: ${m.content}`)
@@ -40,14 +54,21 @@ export async function runExecutionTurn(opts: { conversationId: string; agent: Ag
   ].join('\n\n');
 
   try {
-    const { result, providerId, modelId } = await generateForAgent(agent, prompt, executionTools, { stopWhen: stepCountIs(MAX_STEPS) });
+    const { result, providerId, modelId } = await generateForAgent(agent, prompt, executionTools, {
+      stopWhen: stepCountIs(MAX_STEPS),
+    });
     recordProviderCall({
       agentId: agent.id,
       providerId,
       modelId,
       inputTokens: result.usage.inputTokens ?? 0,
       outputTokens: result.usage.outputTokens ?? 0,
-      costUsd: computeCostUsd(providerId, modelId, result.usage.inputTokens ?? 0, result.usage.outputTokens ?? 0),
+      costUsd: computeCostUsd(
+        providerId,
+        modelId,
+        result.usage.inputTokens ?? 0,
+        result.usage.outputTokens ?? 0,
+      ),
     });
     const agentMessage = sendMessage({
       conversationId,

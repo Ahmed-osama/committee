@@ -42,7 +42,14 @@ test('falls through a rate-limited provider to the next one', () => {
 
   // groq's default limit is 30 rpm — saturate it for this exact model id.
   for (let i = 0; i < 30; i++) {
-    recordProviderCall({ agentId: agent.id, providerId: 'groq', modelId: 'saturate-me', inputTokens: 1, outputTokens: 1, costUsd: 0 });
+    recordProviderCall({
+      agentId: agent.id,
+      providerId: 'groq',
+      modelId: 'saturate-me',
+      inputTokens: 1,
+      outputTokens: 1,
+      costUsd: 0,
+    });
   }
 
   const selection = selectProvider(agent);

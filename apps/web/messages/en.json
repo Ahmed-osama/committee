@@ -1,0 +1,137 @@
+{
+  "Metadata": {
+    "title": "GroundTruth",
+    "description": "Direct seller/buyer real-estate negotiation with a game-resistant valuation signal."
+  },
+  "HomePage": {
+    "title": "GroundTruth",
+    "description": "Scaffolding in progress — see docs/projects/groundtruth.md.",
+    "browseListings": "Browse listings",
+    "viewDealFeed": "See real closed deals",
+    "tagline": "Buy and sell your land and house, without a broker.",
+    "browseByType": "Browse by type"
+  },
+  "Nav": {
+    "home": "Home",
+    "listings": "Listings",
+    "deals": "Real deals",
+    "account": "Account"
+  },
+  "Login": {
+    "title": "Sign in with your phone number",
+    "subtitlePhone": "We'll text you a 6-digit code",
+    "subtitleCode": "Enter the code we just sent you",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "+201001234567",
+    "sendCode": "Send code",
+    "codeLabel": "Code",
+    "verifyCode": "Verify",
+    "sendError": "Couldn't send the code. Check the number and try again.",
+    "verifyError": "Incorrect code. Try again.",
+    "success": "Signed in."
+  },
+  "Listings": {
+    "browseTitle": "Listings",
+    "empty": "No listings yet.",
+    "newListing": "New listing",
+    "priceLabel": "Price",
+    "areaLabel": "Area",
+    "zoneLabel": "Zone",
+    "typeLabel": "Type",
+    "type": {
+      "apartment": "Apartment",
+      "house": "House",
+      "land": "Land",
+      "commercial": "Commercial"
+    },
+    "detailNotFound": "This listing isn't available.",
+    "backToListings": "Back to listings",
+    "createTitle": "New listing",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "submit": "Publish listing",
+    "signInToCreate": "Sign in to publish a listing.",
+    "kycRequired": "Your ID verification must be approved before you can publish a listing.",
+    "startKyc": "Verify your ID",
+    "askingPriceTag": "Asking price — not sold yet"
+  },
+  "Kyc": {
+    "title": "ID verification",
+    "subtitle": "We need to confirm who you are before you can publish a listing.",
+    "signInRequired": "Sign in to verify your ID.",
+    "nationalIdLabel": "National ID number",
+    "documentFrontLabel": "ID card (front)",
+    "documentBackLabel": "ID card (back)",
+    "selfieLabel": "A photo of your face",
+    "documentRequired": "Add a photo of the front of your ID.",
+    "selfieRequired": "Add a photo of your face.",
+    "submit": "Submit for verification",
+    "submitError": "Couldn't submit your verification. Try again.",
+    "pending": "Your verification is being reviewed.",
+    "approved": "Your ID has been verified.",
+    "goToListing": "Publish a listing",
+    "rejected": "Your last submission wasn't accepted. Try again with clearer photos.",
+    "rejectedWithReason": "Your last submission wasn't accepted: {reason}"
+  },
+  "Negotiations": {
+    "offerPriceLabel": "Your offer (EGP)",
+    "makeOffer": "Make an offer",
+    "threadTitle": "Negotiation",
+    "statusLabel": "Status",
+    "status": {
+      "open": "Open",
+      "accepted": "Accepted",
+      "rejected": "Rejected"
+    },
+    "currentPriceLabel": "Current price",
+    "counterPriceLabel": "Your counter-offer (EGP)",
+    "accept": "Accept",
+    "reject": "Reject",
+    "counter": "Send counter-offer",
+    "waitingOnOtherParty": "Waiting for the other party to respond.",
+    "event": {
+      "offer": "Offer made",
+      "counter": "Counter-offer",
+      "accept": "Accepted",
+      "reject": "Rejected"
+    },
+    "viewDeal": "View deal"
+  },
+  "Deals": {
+    "title": "Deal",
+    "agreedPriceLabel": "Agreed price",
+    "statusLabel": "Status",
+    "status": {
+      "pending": "Waiting for both sides to confirm",
+      "closed": "Closed"
+    },
+    "otherPartyConfirmed": "The other party has confirmed this deal.",
+    "otherPartyPending": "Waiting for the other party to confirm.",
+    "youConfirmed": "You've confirmed this deal.",
+    "confirm": "Confirm this deal happened"
+  },
+  "Credits": {
+    "title": "Credits",
+    "signInRequired": "Sign in to buy or spend credits.",
+    "balanceLabel": "Your balance",
+    "creditsUnit": "credits",
+    "buy": "Buy",
+    "mockCheckoutTitle": "Payment (test mode)",
+    "mockCheckoutNotice": "This is a stand-in for the real payment page — no real payment provider is connected yet.",
+    "simulateSuccess": "Simulate successful payment",
+    "simulateFailure": "Simulate failed payment",
+    "revealContact": "Reveal seller's phone number",
+    "sellerPhoneLabel": "Seller's phone number"
+  },
+  "DealFeed": {
+    "title": "Real closed deals",
+    "description": "Every deal here really happened — both the buyer and the seller confirmed it. No names, just zone, type, and price.",
+    "empty": "No closed deals yet.",
+    "soldTag": "Actually sold at this price"
+  },
+  "Valuation": {
+    "label": "Typical price for this area",
+    "perSqm": "EGP/m²",
+    "basedOn": "based on {count} real deals"
+  }
+}

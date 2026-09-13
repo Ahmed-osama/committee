@@ -37,17 +37,30 @@ function agentPool(): AgentConfig[] {
 
 const program = new Command();
 
-program.name('committee').description('A small AI-agent company: give it a goal, watch agents plan it together');
+program
+  .name('committee')
+  .description('A small AI-agent company: give it a goal, watch agents plan it together');
 
 program
   .command('ping')
   .description('Smoke test: send a prompt straight to one provider/model and print the response')
-  .argument('[prompt]', 'prompt to send', 'Reply with exactly one short sentence confirming you can hear me.')
-  .option('-p, --provider <id>', 'provider id (ollama, groq, gemini, anthropic, deepseek, glm, openrouter, perplexity)', 'ollama')
+  .argument(
+    '[prompt]',
+    'prompt to send',
+    'Reply with exactly one short sentence confirming you can hear me.',
+  )
+  .option(
+    '-p, --provider <id>',
+    'provider id (ollama, groq, gemini, anthropic, deepseek, glm, openrouter, perplexity)',
+    'ollama',
+  )
   .option('-m, --model <model>', 'model id', 'llama3.1:8b')
   .action(async (prompt: string, opts: { provider: string; model: string }) => {
     const provider = PROVIDER_REGISTRY[opts.provider];
-    if (!provider) throw new Error(`Unknown provider '${opts.provider}'. Known: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`);
+    if (!provider)
+      throw new Error(
+        `Unknown provider '${opts.provider}'. Known: ${Object.keys(PROVIDER_REGISTRY).join(', ')}`,
+      );
     const { text, usage } = await generateText({ model: provider.model(opts.model), prompt });
     console.log(text);
     console.log(`\n[tokens: ${usage.inputTokens} in / ${usage.outputTokens} out]`);
@@ -55,7 +68,9 @@ program
 
 program
   .command('plan')
-  .description('Give a goal to the Planner/Architect/Skeptic and watch them work out a plan together')
+  .description(
+    'Give a goal to the Planner/Architect/Skeptic and watch them work out a plan together',
+  )
   .argument('<goal>', 'what you want done, in plain language')
   .option('--max-turns <n>', 'safety ceiling on conversation length', (v) => parseInt(v, 10), 36)
   .option('--no-visual', 'skip the visualizer step after finalization')
@@ -67,11 +82,14 @@ program
     // With shared strength-ordered providers, this naturally grows the
     // committee to as many roles as providers currently support.
     const roster = pool.filter(isAgentReady);
-    if (roster.length === 0) throw new Error('No agent has a usable provider right now — check API keys / rate limits.');
+    if (roster.length === 0)
+      throw new Error('No agent has a usable provider right now — check API keys / rate limits.');
     const finalizer = roster.find((a) => a.id === architect.id) ?? roster[0];
     if (roster.length < pool.length) {
       const missing = pool.filter((a) => !roster.includes(a)).map((a) => a.name);
-      console.log(`Note: ${missing.join(', ')} has no usable provider right now — proceeding without ${missing.length > 1 ? 'them' : 'it'}.\n`);
+      console.log(
+        `Note: ${missing.join(', ')} has no usable provider right now — proceeding without ${missing.length > 1 ? 'them' : 'it'}.\n`,
+      );
     }
     const conversation = createConversation(goal);
 
@@ -88,9 +106,12 @@ program
         console.log(`… ${model} (${info.name}) is thinking…`);
       },
       onMessage: (message: Message) => {
-        const speaker = roster.find((a) => a.id === message.fromAgentId)?.name ?? message.fromAgentId;
+        const speaker =
+          roster.find((a) => a.id === message.fromAgentId)?.name ?? message.fromAgentId;
         const model = message.modelId ? ` [${message.providerId}/${message.modelId}]` : '';
-        console.log(`--- turn ${message.turn} | ${speaker} (${message.intent})${model} ---\n${message.content}\n`);
+        console.log(
+          `--- turn ${message.turn} | ${speaker} (${message.intent})${model} ---\n${message.content}\n`,
+        );
       },
     });
 
@@ -99,7 +120,9 @@ program
       console.log(`=== Plan finalized after ${result.turnsUsed} turns ===\n`);
       console.log(result.plan.summary + '\n');
       result.plan.tasks.forEach((t, i) => console.log(`${i + 1}. ${t.title}\n   ${t.description}`));
-      console.log(`\nLinear isn't connected yet, so nothing was published — this plan only exists here.`);
+      console.log(
+        `\nLinear isn't connected yet, so nothing was published — this plan only exists here.`,
+      );
       console.log(`Once you have a Linear workspace, publishing this plan there is next.`);
 
       // One-shot, outside the round-robin debate above — invoked exactly
@@ -110,16 +133,22 @@ program
           try {
             const svg = await generatePlanVisual({ agent: visualizer, plan: result.plan });
             setConversationPlanVisual(conversation.id, svg);
-            console.log(`\nVisual saved — run 'committee serve' and open this conversation to see it.`);
+            console.log(
+              `\nVisual saved — run 'committee serve' and open this conversation to see it.`,
+            );
           } catch (err) {
-            console.log(`\n(Visualizer couldn't produce a diagram: ${err instanceof Error ? err.message : String(err)})`);
+            console.log(
+              `\n(Visualizer couldn't produce a diagram: ${err instanceof Error ? err.message : String(err)})`,
+            );
           }
         }
       }
     } else {
       updateConversationStatus(conversation.id, 'failed');
       console.log(`=== No plan reached within ${result.turnsUsed} turns ===`);
-      console.log(`Run 'committee transcript ${conversation.id}' to see how the conversation went.`);
+      console.log(
+        `Run 'committee transcript ${conversation.id}' to see how the conversation went.`,
+      );
     }
   });
 
@@ -140,7 +169,8 @@ program
   .description('Delete a conversation and its transcript')
   .argument('<conversationId>')
   .action((conversationId: string) => {
-    if (!getConversation(conversationId)) throw new Error(`Conversation not found: ${conversationId}`);
+    if (!getConversation(conversationId))
+      throw new Error(`Conversation not found: ${conversationId}`);
     deleteConversation(conversationId);
     console.log(`Deleted conversation ${conversationId}`);
   });

@@ -1,0 +1,138 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const entries = await getCollection('journal');
+entries.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const rendered = await Promise.all(
+  entries.map(async (entry) => ({ entry, Content: (await entry.render()).Content }))
+);
+---
+
+<BaseLayout title="Learning journal">
+  <header class="hero">
+    <a class="crumb" href="/">&larr; committee docs</a>
+    <h1>Learning journal</h1>
+    <div class="chip">FRONTEND · JS · AI</div>
+    <p style="margin-top:14px">Tips, concept explanations, and reading recommendations pulled from
+    whatever actually happened while building this project — newest first.</p>
+  </header>
+
+  <div id="journal">
+    {rendered.map(({ entry, Content }) => (
+      <article class="entry" data-entry-id={entry.data.entryId}>
+        <time datetime={entry.data.date.toISOString().slice(0, 10)}>
+          {entry.data.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+        </time>
+        <h2>{entry.data.title}</h2>
+        <div class="body"><Content /></div>
+        <div class="entry-footer">
+          <div class="tags">
+            {entry.data.tags.slice(0, 3).map((tag) => <span class={`chip-tag ${tag}`}>{tag.toUpperCase()}</span>)}
+          </div>
+          <button class="read-toggle" type="button">Mark as read</button>
+        </div>
+      </article>
+    ))}
+  </div>
+
+  <style>
+    header.hero { padding: 0 0 32px; border-bottom: 1px dashed #ddd6c4; margin-bottom: 40px; }
+    header.hero .crumb { font-size: 13px; font-weight: 700; color: var(--muted); text-decoration: none; }
+    header.hero .crumb:hover { text-decoration: underline; }
+    header.hero h1 { font-size: 36px; font-weight: 800; margin: 10px 0 8px; letter-spacing: -0.01em; }
+    header.hero p { font-size: 15.5px; color: #444; max-width: 600px; margin: 0; }
+
+    article.entry {
+      background: var(--paper);
+      border: 1px solid #ece7d9;
+      box-shadow: 0 10px 28px -18px rgba(0,0,0,0.18);
+      border-radius: 18px;
+      padding: 26px 28px;
+      margin-bottom: 28px;
+    }
+    article.entry time {
+      display: block; font-size: 12.5px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;
+    }
+    article.entry h2 { font-size: 21px; font-weight: 700; margin: 0 0 12px; letter-spacing: -0.005em; }
+    article.entry .body :global(p) { font-size: 15px; margin: 0 0 12px; color: #2b2b2b; }
+    article.entry .body :global(.reading) {
+      background: var(--cream); border-radius: 12px; padding: 12px 16px; margin-top: 4px;
+    }
+    article.entry .body :global(.reading .label) {
+      font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 12.5px;
+      text-transform: uppercase; letter-spacing: 0.03em; display: block; margin-bottom: 4px;
+    }
+    article.entry .body :global(.reading ul) { margin: 0; padding-left: 18px; font-size: 14px; }
+
+    .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip-tag {
+      font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+      padding: 4px 10px; border-radius: 999px; border: 2px solid var(--ink);
+    }
+    .chip-tag.js { background: var(--yellow); }
+    .chip-tag.frontend { background: var(--blue); color: #fff; }
+    .chip-tag.ai { background: var(--purple); color: #fff; }
+    .chip-tag.node { background: var(--green); }
+    .chip-tag.testing { background: var(--coral); color: #fff; }
+    .chip-tag.architecture { background: var(--cream); }
+
+    .entry-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 12px; flex-wrap: wrap; }
+    .read-toggle {
+      font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 12.5px;
+      padding: 6px 14px; border-radius: 999px; border: 2px solid var(--ink);
+      background: #fff; color: var(--ink); cursor: pointer; white-space: nowrap;
+    }
+    .read-toggle:hover { background: #f2eee4; }
+    article.entry.is-read { opacity: 0.55; }
+    article.entry.is-read .read-toggle { background: var(--green); border-color: var(--green-dk); }
+  </style>
+
+  <script>
+    import { enrichCodeBlocks } from '../../scripts/enrich-code-blocks';
+    enrichCodeBlocks();
+
+    const STORAGE_KEY = 'committee-docs-read-entries';
+
+    function readSet(): Set<string> {
+      try {
+        return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'));
+      } catch {
+        return new Set();
+      }
+    }
+
+    function writeSet(set: Set<string>) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+      } catch {
+        // storage unavailable — read state just won't persist this session
+      }
+    }
+
+    const read = readSet();
+
+    for (const article of document.querySelectorAll<HTMLElement>('article.entry')) {
+      const id = article.getAttribute('data-entry-id');
+      const button = article.querySelector<HTMLButtonElement>('.read-toggle');
+      if (!id || !button) continue;
+
+      const applyState = (isRead: boolean) => {
+        article.classList.toggle('is-read', isRead);
+        button.textContent = isRead ? '✓ Read' : 'Mark as read';
+      };
+
+      applyState(read.has(id));
+
+      button.addEventListener('click', () => {
+        const nowRead = !article.classList.contains('is-read');
+        applyState(nowRead);
+        if (nowRead) read.add(id);
+        else read.delete(id);
+        writeSet(read);
+      });
+    }
+  </script>
+</BaseLayout>

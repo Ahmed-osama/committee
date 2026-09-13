@@ -27,6 +27,9 @@ export const SHARED_MODEL_BY_PROVIDER = {
   // One of 100+ models NVIDIA NIM serves for free — see nvidia-nim-adapter.ts.
   // Not yet live-tested (no key held).
   'nvidia-nim': 'meta/llama-3.1-70b-instruct',
+  // Live-tested 2026-09-13 — real chat completion succeeded. Cohere's free
+  // Trial tier (1,000 calls/month, 20 RPM) — see cohere-adapter.ts.
+  cohere: 'command-a-03-2025',
 };
 
 const DEFAULT_PLANNER: AgentConfig = {
@@ -94,7 +97,7 @@ const DEFAULT_ESTIMATOR: AgentConfig = {
   systemPrompt:
     'You are the estimator in a small planning conversation. Your job is to flag effort, risk, and resourcing ' +
     'concerns on the tasks currently proposed — which ones are bigger than they look, which depend on something ' +
-    'outside the team\'s control, which should be split or merged for that reason. Be concrete about which task ' +
+    "outside the team's control, which should be split or merged for that reason. Be concrete about which task " +
     'you mean, not general commentary on scope.',
   providerPreference: rotateProviderOrder(4),
   modelByProvider: SHARED_MODEL_BY_PROVIDER,
@@ -109,7 +112,7 @@ const DEFAULT_REVIEWER: AgentConfig = {
     'You are the reviewer in a small planning conversation. Once the architect and skeptic are converging, you do ' +
     'a final clarity and completeness pass: is every task actually understandable to someone who executes it ' +
     "without more context, is anything implied but never stated outright? You don't relitigate settled structural " +
-    'decisions — that is the architect and skeptic\'s job.',
+    "decisions — that is the architect and skeptic's job.",
   providerPreference: rotateProviderOrder(5),
   modelByProvider: SHARED_MODEL_BY_PROVIDER,
   toolAllowList: [],

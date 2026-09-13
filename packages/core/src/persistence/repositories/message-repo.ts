@@ -12,5 +12,10 @@ export function sendMessage(input: Omit<Message, 'id' | 'createdAt'>): Message {
 
 /** The full transcript of a conversation, in turn order. */
 export function getConversationTranscript(conversationId: string): Message[] {
-  return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(asc(messages.turn)).all() as Message[];
+  return db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(asc(messages.turn))
+    .all() as Message[];
 }

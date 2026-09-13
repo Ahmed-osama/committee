@@ -6,7 +6,9 @@ export const agents = sqliteTable('agents', {
   role: text('role').notNull(),
   systemPrompt: text('system_prompt').notNull(),
   providerPreference: text('provider_preference', { mode: 'json' }).$type<string[]>().notNull(),
-  modelByProvider: text('model_by_provider', { mode: 'json' }).$type<Record<string, string>>().notNull(),
+  modelByProvider: text('model_by_provider', { mode: 'json' })
+    .$type<Record<string, string>>()
+    .notNull(),
   toolAllowList: text('tool_allow_list', { mode: 'json' }).$type<string[]>().notNull(),
 });
 

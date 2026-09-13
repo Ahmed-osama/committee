@@ -25,6 +25,13 @@ const PRICING: Record<string, ModelPricing> = {
   // also bills a flat per-request fee on top of tokens (varies by search
   // context size) that isn't represented here at all.
   'perplexity:sonar': { inputPerMTok: 1, outputPerMTok: 1 },
+  // Cohere's pricing page (cohere.com/pricing) doesn't list Command A itself
+  // (only older Command/Command R models) and no per-token figure could be
+  // confirmed from Cohere's own docs — this is a placeholder in the same
+  // tier as Command R+ 08-2024, not a verified price. Reverify before this
+  // matters for real money; note also cohere-adapter.ts's Trial key is
+  // capped/non-commercial regardless.
+  'cohere:command-a-03-2025': { inputPerMTok: 2.5, outputPerMTok: 10 },
 };
 
 const FREE: ModelPricing = { inputPerMTok: 0, outputPerMTok: 0 };
@@ -34,12 +41,30 @@ const FREE: ModelPricing = { inputPerMTok: 0, outputPerMTok: 0 };
 // sambanova/nvidia-nim are only free here because committee sticks to their
 // free-tier model catalogs — add real pricing above if a paid model on
 // either is ever used.
-const FREE_PROVIDERS = new Set(['ollama', 'groq', 'gemini', 'openrouter', 'sambanova', 'nvidia-nim']);
+const FREE_PROVIDERS = new Set([
+  'ollama',
+  'groq',
+  'gemini',
+  'openrouter',
+  'sambanova',
+  'nvidia-nim',
+]);
 
-export function computeCostUsd(providerId: string, modelId: string, inputTokens: number, outputTokens: number): number {
-  const pricing = PRICING[`${providerId}:${modelId}`] ?? (FREE_PROVIDERS.has(providerId) ? FREE : undefined);
+export function computeCostUsd(
+  providerId: string,
+  modelId: string,
+  inputTokens: number,
+  outputTokens: number,
+): number {
+  const pricing =
+    PRICING[`${providerId}:${modelId}`] ?? (FREE_PROVIDERS.has(providerId) ? FREE : undefined);
   if (!pricing) {
-    throw new Error(`No pricing configured for ${providerId}:${modelId} — add it to pricing.ts before using this model`);
+    throw new Error(
+      `No pricing configured for ${providerId}:${modelId} — add it to pricing.ts before using this model`,
+    );
   }
-  return (inputTokens / 1_000_000) * pricing.inputPerMTok + (outputTokens / 1_000_000) * pricing.outputPerMTok;
+  return (
+    (inputTokens / 1_000_000) * pricing.inputPerMTok +
+    (outputTokens / 1_000_000) * pricing.outputPerMTok
+  );
 }

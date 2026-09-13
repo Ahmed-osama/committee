@@ -4,7 +4,8 @@
  * just structured signals, so unlike a pure task-coordination message this
  * carries real content, not just a payload.
  */
-export type MessageIntent = 'propose' | 'challenge' | 'clarify' | 'agree' | 'finalize' | 'human' | 'error';
+export type MessageIntent =
+  'propose' | 'challenge' | 'clarify' | 'agree' | 'finalize' | 'human' | 'error';
 
 /** Sentinel fromAgentId for a message injected by the human watching the conversation, not any agent. */
 export const HUMAN_AGENT_ID = 'human';

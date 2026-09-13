@@ -1,7 +1,4 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { join, dirname } from 'node:path';
 import { desc } from 'drizzle-orm';
 import { runPlanningSession } from '../conversation/planning-session.js';
 import type { Message } from '../domain/message.js';
@@ -39,22 +36,6 @@ import { PAGE_HTML } from './page.js';
 
 const MAX_TURNS_LIMIT = 100;
 
-// Repo root's docs/ — the living-docs and learning-journal pages that
-// document-update/learning-digest keep editing on disk. Served straight
-// from disk (not embedded) so an already-open tab's poll picks up edits
-// the moment the background skill writes them, no server restart needed.
-const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'docs');
-
-function serveDocFile(res: ServerResponse, filename: string): void {
-  try {
-    const html = readFileSync(join(DOCS_DIR, filename), 'utf8');
-    res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
-    res.end(html);
-  } catch {
-    sendJson(res, 404, { error: 'not found' });
-  }
-}
-
 const bus = new EventBus();
 
 /** The full pool of roles the committee can seat — actual roster is whichever of these `isAgentReady` picks out. */
@@ -71,7 +52,10 @@ function agentPool(): AgentConfig[] {
 
 function sendJson(res: ServerResponse, status: number, data: unknown): void {
   const body = JSON.stringify(data);
-  res.writeHead(status, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) });
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(body),
+  });
   res.end(body);
 }
 
@@ -134,7 +118,10 @@ function runSessionAndFinalize(
     ...sessionOpts,
   })
     .then(async (result) => {
-      updateConversationStatus(conversation.id, result.stopped ? 'stopped' : result.finalized ? 'finalized' : 'failed');
+      updateConversationStatus(
+        conversation.id,
+        result.stopped ? 'stopped' : result.finalized ? 'finalized' : 'failed',
+      );
       if (!result.finalized || !result.plan) return;
 
       // One-shot, outside the round-robin debate — the visualizer never gets a
@@ -168,12 +155,18 @@ async function handleStartPlan(req: IncomingMessage, res: ServerResponse): Promi
     return sendJson(res, 400, { error: 'invalid JSON body' });
   }
   if (!goal?.trim()) return sendJson(res, 400, { error: 'goal is required' });
-  if (maxTurns !== undefined && (!Number.isFinite(maxTurns) || maxTurns < 1 || maxTurns > MAX_TURNS_LIMIT)) {
+  if (
+    maxTurns !== undefined &&
+    (!Number.isFinite(maxTurns) || maxTurns < 1 || maxTurns > MAX_TURNS_LIMIT)
+  ) {
     return sendJson(res, 400, { error: `maxTurns must be between 1 and ${MAX_TURNS_LIMIT}` });
   }
 
   const selected = selectRoster();
-  if (!selected) return sendJson(res, 503, { error: 'no agent has a usable provider right now — check API keys / rate limits' });
+  if (!selected)
+    return sendJson(res, 503, {
+      error: 'no agent has a usable provider right now — check API keys / rate limits',
+    });
   const { roster, finalizerId } = selected;
 
   const conversation = createConversation(goal.trim());
@@ -187,7 +180,11 @@ async function handleStartPlan(req: IncomingMessage, res: ServerResponse): Promi
   runSessionAndFinalize(conversation, roster, finalizerId, { maxTurns });
 }
 
-async function handleRegenerate(req: IncomingMessage, res: ServerResponse, conversationId: string): Promise<void> {
+async function handleRegenerate(
+  req: IncomingMessage,
+  res: ServerResponse,
+  conversationId: string,
+): Promise<void> {
   let content: string | undefined;
   try {
     ({ content } = JSON.parse(await readBody(req)) as { content?: string });
@@ -198,10 +195,14 @@ async function handleRegenerate(req: IncomingMessage, res: ServerResponse, conve
 
   const conversation = getConversation(conversationId);
   if (!conversation) return sendJson(res, 404, { error: 'not found' });
-  if (conversation.status === 'in_progress') return sendJson(res, 409, { error: 'conversation is already in progress' });
+  if (conversation.status === 'in_progress')
+    return sendJson(res, 409, { error: 'conversation is already in progress' });
 
   const selected = selectRoster();
-  if (!selected) return sendJson(res, 503, { error: 'no agent has a usable provider right now — check API keys / rate limits' });
+  if (!selected)
+    return sendJson(res, 503, {
+      error: 'no agent has a usable provider right now — check API keys / rate limits',
+    });
   const { roster, finalizerId } = selected;
 
   const startTurn = (getConversationTranscript(conversationId).at(-1)?.turn ?? -1) + 1;
@@ -220,7 +221,11 @@ async function handleRegenerate(req: IncomingMessage, res: ServerResponse, conve
 }
 
 function handleEvents(req: IncomingMessage, res: ServerResponse, conversationId: string): void {
-  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
 
   // Replay whatever already happened, so connecting mid-conversation (or
   // reloading the page) doesn't lose earlier turns.
@@ -235,7 +240,8 @@ function handleEvents(req: IncomingMessage, res: ServerResponse, conversationId:
   }
 
   const offMessage = bus.onMessage((message: Message) => {
-    if (message.conversationId === conversationId) res.write(`event: message\ndata: ${JSON.stringify(message)}\n\n`);
+    if (message.conversationId === conversationId)
+      res.write(`event: message\ndata: ${JSON.stringify(message)}\n\n`);
   });
   const offThinking = bus.onThinking((id, info) => {
     if (id === conversationId) res.write(`event: thinking\ndata: ${JSON.stringify(info)}\n\n`);
@@ -257,7 +263,11 @@ function handleEvents(req: IncomingMessage, res: ServerResponse, conversationId:
   });
 }
 
-async function handleInject(req: IncomingMessage, res: ServerResponse, conversationId: string): Promise<void> {
+async function handleInject(
+  req: IncomingMessage,
+  res: ServerResponse,
+  conversationId: string,
+): Promise<void> {
   let content: string | undefined;
   try {
     ({ content } = JSON.parse(await readBody(req)) as { content?: string });
@@ -280,11 +290,19 @@ async function handleInject(req: IncomingMessage, res: ServerResponse, conversat
   // steer anymore, so treat this as a direct command against the real
   // codebase instead: one agent, real tools, acting on what you typed.
   const executor = agentPool().find(isAgentReady);
-  if (!executor) return sendJson(res, 503, { error: 'no agent has a usable provider right now — check API keys / rate limits' });
+  if (!executor)
+    return sendJson(res, 503, {
+      error: 'no agent has a usable provider right now — check API keys / rate limits',
+    });
 
   const lastTurn = getConversationTranscript(conversationId).at(-1)?.turn ?? -1;
   try {
-    const { humanMessage, agentMessage } = await runExecutionTurn({ conversationId, agent: executor, command: content.trim(), turn: lastTurn + 1 });
+    const { humanMessage, agentMessage } = await runExecutionTurn({
+      conversationId,
+      agent: executor,
+      command: content.trim(),
+      turn: lastTurn + 1,
+    });
     sendJson(res, 200, { messages: [humanMessage, agentMessage] });
   } catch (err) {
     sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
@@ -294,7 +312,8 @@ async function handleInject(req: IncomingMessage, res: ServerResponse, conversat
 function handleStop(res: ServerResponse, conversationId: string): void {
   const conversation = getConversation(conversationId);
   if (!conversation) return sendJson(res, 404, { error: 'not found' });
-  if (conversation.status !== 'in_progress') return sendJson(res, 409, { error: 'conversation is not in progress' });
+  if (conversation.status !== 'in_progress')
+    return sendJson(res, 409, { error: 'conversation is not in progress' });
 
   requestStop(conversationId);
   sendJson(res, 202, {});
@@ -303,7 +322,8 @@ function handleStop(res: ServerResponse, conversationId: string): void {
 function handlePause(res: ServerResponse, conversationId: string): void {
   const conversation = getConversation(conversationId);
   if (!conversation) return sendJson(res, 404, { error: 'not found' });
-  if (conversation.status !== 'in_progress') return sendJson(res, 409, { error: 'conversation is not in progress' });
+  if (conversation.status !== 'in_progress')
+    return sendJson(res, 409, { error: 'conversation is not in progress' });
 
   requestPause(conversationId);
   sendJson(res, 202, {});
@@ -369,14 +389,6 @@ export function startWebServer(port = 3000): Promise<WebServerHandle> {
       res.end(PAGE_HTML);
       return;
     }
-    if (req.method === 'GET' && (url.pathname === '/docs' || url.pathname === '/docs/' || url.pathname === '/docs/index.html')) {
-      serveDocFile(res, 'index.html');
-      return;
-    }
-    if (req.method === 'GET' && url.pathname === '/docs/learning.html') {
-      serveDocFile(res, 'learning.html');
-      return;
-    }
     if (req.method === 'POST' && url.pathname === '/api/plan') {
       void handleStartPlan(req, res);
       return;
@@ -432,6 +444,8 @@ export function startWebServer(port = 3000): Promise<WebServerHandle> {
   });
 
   return new Promise((resolve) => {
-    server.listen(port, () => resolve({ port, close: () => new Promise((r) => server.close(() => r())) }));
+    server.listen(port, () =>
+      resolve({ port, close: () => new Promise((r) => server.close(() => r())) }),
+    );
   });
 }
