@@ -394,6 +394,39 @@ credits` (balance + package list), listing detail page grows a reveal-contact
   the admin dashboard picking up new entries. `e2e/operator-cannot-transact.spec.ts`
   covers this via Playwright the same way COM-52 covers the KYC-unblock path.
 
+## Buyer-to-seller phone payments (COM-54, M0 spike COM-55)
+
+Distinct from COM-21's `src/lib/payments/` credit ledger (seller/buyer paying the
+_platform_ for a reveal) — this is a buyer paying a seller directly for a deal/
+deposit. Binding design finalized via `committee_plan` (COM-54, conversation
+c56d2dbc): Paymob Intention API, mobile wallets first, dual source of truth
+(webhook + backup poll), a fixed order state machine.
+
+- `src/lib/payments/payment-order-state-machine.ts` — pure state machine
+  (`pending_authorization` → `awaiting_webhook_confirmation` → `confirmed` |
+  `refunded_timeout`), same split-pure-logic-from-DB-access pattern as COM-19/
+  COM-20. `LateSettlementError` is the load-bearing case: a webhook confirming
+  success after an order already timed out must never flip it back to `confirmed` —
+  see `confirmFromWebhook`'s doc comment.
+- `src/lib/payments/orders.ts` — DB-backed wrapper over `packages/db`'s
+  `payment_orders` table. `createPaymentOrder` is COM-55's actual deliverable: an
+  `onConflictDoNothing` insert on `merchant_order_id` + re-select, so the **DB-level
+  unique constraint is the authoritative idempotency guard**, not any dedup behavior
+  Paymob itself may or may not provide (COM-55's spike found no real sandbox account
+  exists yet to verify Paymob's own behavior — see
+  `docs/projects/groundtruth-payments-spike.md`). `authorizePaymentOrder`/
+  `confirmPaymentOrderFromWebhook`/`expirePaymentOrderIfOverdue` use `pooledDb` +
+  `.for('update')`, matching COM-19/COM-20's lock-then-transition pattern.
+- **Known gap, out of this spike's scope**: no checkout-creation or webhook route is
+  wired up yet, no `PaymobPaymentProvider` adapter exists in
+  `packages/payment-providers`, and the timeout sweep (a scheduled job calling
+  `expirePaymentOrderIfOverdue` for overdue orders) isn't implemented — all gated on
+  COM-56 (merchant onboarding) providing real credentials; that's M1 (COM-57).
+- Validated: `payment-order-state-machine.test.ts` unit-tests the pure transitions
+  exhaustively, `pnpm run typecheck` passes. The migration itself has **not** been
+  run against a live Postgres instance in this session (no local `psql`/Docker
+  available) — unlike COM-19/20's validation, this is a known gap to close before M1.
+
 ## Arabic UI copy pass (COM-25)
 
 - `messages/ar.json` now carries real Arabic translations for every key introduced

@@ -267,3 +267,63 @@ export const contactReveals = pgTable(
   },
   (table) => [unique().on(table.listingId, table.buyerId)],
 );
+
+export const paymentOrderStatusEnum = pgEnum('payment_order_status', [
+  'pending_authorization',
+  'awaiting_webhook_confirmation',
+  'confirmed',
+  'refunded_timeout',
+]);
+
+// COM-54/COM-55's buyer-to-seller phone-payment order (distinct from
+// `creditPurchases` above, which is the seller/buyer paying the *platform* for a
+// reveal — this is a buyer paying a seller directly for a deal/deposit). One row per
+// payment attempt, tied to the `deals` row it's paying against.
+//
+// `merchantOrderId` is the authoritative idempotency guard, unconditionally, per
+// COM-55: the DB-level unique constraint (not Paymob's own dedup behavior, which
+// COM-55's sandbox spike found undocumented/unverified — see
+// docs/projects/groundtruth-payments-spike.md) is what actually prevents two
+// concurrent authorization attempts for the same order from both succeeding.
+// `orders.ts`'s `createPaymentOrder` inserts and treats a unique-violation on this
+// column as "already in flight," never as an error to surface to the caller.
+//
+// State machine (binding design from COM-54's committee_plan round, id c56d2dbc):
+// pending_authorization -> awaiting_webhook_confirmation (a 30-minute window,
+// `authorizationDeadlineAt`, during which the UI shows a non-reactive "processing"
+// state and re-tapping pay is not possible) -> confirmed | refunded_timeout. A
+// webhook that arrives after refunded_timeout must never mutate this row — see
+// `lateSettlementReconciliations` below.
+export const paymentOrders = pgTable('payment_orders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealId: uuid('deal_id')
+    .notNull()
+    .references(() => deals.id, { onDelete: 'cascade' }),
+  buyerId: uuid('buyer_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  sellerId: uuid('seller_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  merchantOrderId: text('merchant_order_id').notNull().unique(),
+  amountEgp: integer('amount_egp').notNull(),
+  status: paymentOrderStatusEnum('status').notNull().default('pending_authorization'),
+  providerReference: text('provider_reference'),
+  authorizationDeadlineAt: timestamp('authorization_deadline_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// A webhook landing after its order already hit `refunded_timeout` opens this event
+// instead of mutating `paymentOrders` — per COM-54's design, that's a manual finance
+// ticket + compensating ledger entry, never an automatic state flip. No FK cascade
+// from `paymentOrders` on delete: this is a compliance/finance record and must
+// survive independent of the order row's own lifecycle.
+export const lateSettlementReconciliations = pgTable('late_settlement_reconciliations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  paymentOrderId: uuid('payment_order_id').notNull(),
+  merchantOrderId: text('merchant_order_id').notNull(),
+  providerReference: text('provider_reference').notNull(),
+  rawWebhookPayload: text('raw_webhook_payload').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

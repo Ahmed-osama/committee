@@ -16,6 +16,7 @@ export {
   deals,
   kycStatusEnum,
   kycVerifications,
+  lateSettlementReconciliations,
   listingPhotos,
   listings,
   listingStatusEnum,
@@ -26,6 +27,8 @@ export {
   negotiationStatusEnum,
   negotiationTurnEnum,
   otpRequests,
+  paymentOrders,
+  paymentOrderStatusEnum,
   userRoleEnum,
   users,
 } from './schema.js';
