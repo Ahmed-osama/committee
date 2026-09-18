@@ -6,7 +6,15 @@ import { getSession } from '@/app/api/_lib/session';
 import { BigButton } from '@/components/big-button';
 import { creditForPropertyType } from '@/components/image-credits';
 import { ImageAttribution } from '@/components/image-attribution';
-import { BackIcon, CheckCircleIcon, PhoneCallIcon, PinIcon, RulerIcon, TagOfferIcon, TYPE_ICON } from '@/components/icons';
+import {
+  BackIcon,
+  CheckCircleIcon,
+  PhoneCallIcon,
+  PinIcon,
+  RulerIcon,
+  TagOfferIcon,
+  TYPE_ICON,
+} from '@/components/icons';
 import { PageShell } from '@/components/page-shell';
 import { getListingWithPhotos } from '@/lib/listings/listings';
 import { getExistingReveal } from '@/lib/payments/credits';
@@ -34,18 +42,26 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const session = await getSession();
   const isOwner = session != null && session.userId === listing.sellerId;
   const canMakeOffer = session != null && !isOwner;
-  const reveal = session != null && !isOwner ? await getExistingReveal(session.userId, listing.id) : null;
+  const reveal =
+    session != null && !isOwner ? await getExistingReveal(session.userId, listing.id) : null;
   // Suppressed (null) entirely, not a "not enough data yet" placeholder, until
   // MIN_DEALS_FOR_VALUATION real dual-confirmed deals exist for this cell — see
   // lib/valuation/valuation.ts.
-  const valuation = await getValuationForListing(listing.zone, listing.propertyType, listing.areaSqm);
+  const valuation = await getValuationForListing(
+    listing.zone,
+    listing.propertyType,
+    listing.areaSqm,
+  );
   const credit = creditForPropertyType(listing.propertyType);
   const heroPhoto = photos[0]?.url ?? credit.src;
   const TypeIcon = TYPE_ICON[listing.propertyType];
 
   return (
     <PageShell>
-      <Link href="/listings" className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-muted">
+      <Link
+        href="/listings"
+        className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-muted"
+      >
         <BackIcon width={17} height={17} className="rtl:rotate-180" />
         {t('backToListings')}
       </Link>
@@ -56,7 +72,8 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <p className="text-3xl font-extrabold tracking-tight text-ink">
-        {listing.priceEgp.toLocaleString()} <span className="text-base font-bold text-muted">EGP</span>
+        {listing.priceEgp.toLocaleString()}{' '}
+        <span className="text-base font-bold text-muted">EGP</span>
       </p>
       <p className="text-sm font-semibold text-faint">{t('askingPriceTag')}</p>
       <h1 className="mt-1 text-base font-semibold text-muted">{listing.title}</h1>
@@ -69,7 +86,8 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           <div>
             <p className="text-sm font-extrabold text-brand-dark">{tv('label')}</p>
             <p className="mt-0.5 text-xs text-brand-dark/80">
-              {valuation.avgPricePerSqmEgp.toLocaleString()} {tv('perSqm')} — {tv('basedOn', { count: valuation.dealCount })}
+              {valuation.avgPricePerSqmEgp.toLocaleString()} {tv('perSqm')} —{' '}
+              {tv('basedOn', { count: valuation.dealCount })}
             </p>
           </div>
         </div>
@@ -98,7 +116,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       {photos.length > 1 ? (
         <div className="mt-4 flex gap-2 overflow-x-auto">
           {photos.slice(1).map((photo) => (
-            <div key={photo.id} className="relative h-24 w-24 shrink-0 overflow-hidden rounded-card bg-brand-light">
+            <div
+              key={photo.id}
+              className="relative h-24 w-24 shrink-0 overflow-hidden rounded-card bg-brand-light"
+            >
               {/* Public listing photos are served from src/app/photos, not next/image's
                   optimizer — see lib/storage/local-file-storage's TODO on this being a
                   local-disk placeholder pending a real object storage vendor. */}
@@ -129,7 +150,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
       {session != null && !isOwner ? (
         reveal ? (
-          <p className="mt-4 flex items-center justify-center gap-2 rounded-card bg-brand-light p-4 text-xl font-bold text-brand-dark" dir="ltr">
+          <p
+            className="mt-4 flex items-center justify-center gap-2 rounded-card bg-brand-light p-4 text-xl font-bold text-brand-dark"
+            dir="ltr"
+          >
             <PhoneCallIcon width={20} height={20} />
             {reveal.phone}
           </p>

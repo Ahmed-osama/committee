@@ -26,9 +26,12 @@ export async function POST(
   // action, even incidentally — rejected outright here rather than relying only on
   // the party check below (operator accounts aren't meant to transact at all).
   if (session.role === 'operator') {
-    return NextResponse.json({ error: 'operator accounts cannot respond to negotiations' }, {
-      status: 403,
-    });
+    return NextResponse.json(
+      { error: 'operator accounts cannot respond to negotiations' },
+      {
+        status: 403,
+      },
+    );
   }
 
   const { id: negotiationId } = await params;

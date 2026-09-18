@@ -1,5 +1,5 @@
 ---
-title: 'Tailwind utilities that don''t exist just vanish, they don''t error'
+title: "Tailwind utilities that don't exist just vanish, they don't error"
 date: 2026-09-13
 tags: ['frontend', 'js']
 entryId: '2026-09-13-tailwind-arbitrary-scale-silent-miss'

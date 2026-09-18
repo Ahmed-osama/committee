@@ -21,7 +21,9 @@ export async function deleteAccount(userId: string): Promise<void> {
     // operator, not just ones where they were the assisted caller (COM-35).
     await tx
       .delete(assistedSessionLogs)
-      .where(or(eq(assistedSessionLogs.userId, userId), eq(assistedSessionLogs.operatorId, userId)));
+      .where(
+        or(eq(assistedSessionLogs.userId, userId), eq(assistedSessionLogs.operatorId, userId)),
+      );
     await tx.delete(users).where(eq(users.id, userId));
   });
 }

@@ -27,12 +27,22 @@ export default function HomePage() {
       <h1 className="mb-5 text-2xl font-extrabold leading-snug tracking-tight">{t('tagline')}</h1>
 
       <div className="relative mb-5 h-36 overflow-hidden rounded-media">
-        <Image src={IMAGE_CREDITS.hero.src} alt="" fill sizes="100vw" className="object-cover" priority />
+        <Image
+          src={IMAGE_CREDITS.hero.src}
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
+        />
         <ImageAttribution credit={IMAGE_CREDITS.hero} />
       </div>
 
       <div className="mb-7 flex flex-col gap-2.5">
-        <Link href="/listings" className="flex items-center gap-3.5 rounded-card bg-brand px-4 py-4 text-white">
+        <Link
+          href="/listings"
+          className="flex items-center gap-3.5 rounded-card bg-brand px-4 py-4 text-white"
+        >
           <HouseIcon width={24} height={24} />
           <span className="flex-1 text-lg font-bold">{t('browseListings')}</span>
           <ChevronIcon width={18} height={18} className="rtl:rotate-180" />

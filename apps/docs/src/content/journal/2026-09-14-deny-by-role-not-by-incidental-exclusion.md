@@ -16,7 +16,7 @@ route would reject them anyway, for free.
 The routes (`api/deals/[id]/confirm`, `api/listings/[id]/negotiations`,
 `api/negotiations/[id]/respond`) reject `session.role === 'operator'` outright,
 before that party check ever runs. The reasoning in the comments is the lesson: that
-rejection would have been *incidental* — a side effect of operators happening not to
+rejection would have been _incidental_ — a side effect of operators happening not to
 own any deals — not a designed guarantee. Incidental protection breaks the moment the
 coincidence stops holding: an operator whose `userId` ever matched a party field
 through a future bug, a data migration, or a shared-identity feature would sail

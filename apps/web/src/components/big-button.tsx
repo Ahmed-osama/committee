@@ -4,7 +4,8 @@ import { Link } from '@/i18n/navigation';
 // 56px-tall, full-width-by-default, high-contrast tap target — see tailwind.config.js's
 // `tap` spacing token and docs/projects/groundtruth.md's audience section. `variant`
 // only changes color weight, never size: every button on this app is this big.
-const BASE = 'flex h-tap min-w-tap items-center justify-center gap-2 rounded-card px-5 text-lg font-bold';
+const BASE =
+  'flex h-tap min-w-tap items-center justify-center gap-2 rounded-card px-5 text-lg font-bold';
 const VARIANTS = {
   primary: 'bg-brand text-white',
   secondary: 'bg-white text-ink border border-line',

@@ -28,5 +28,7 @@ export async function logScriptAction(formData: FormData): Promise<void> {
     scriptId,
   });
 
-  redirect(`/operator?phone=${encodeURIComponent(formData.get('phone')?.toString() ?? '')}&logged=1`);
+  redirect(
+    `/operator?phone=${encodeURIComponent(formData.get('phone')?.toString() ?? '')}&logged=1`,
+  );
 }

@@ -5,8 +5,15 @@ import type { ImageCredit } from './image-credits';
 // to read, just a compliance detail. `linked: false` renders a plain <span> instead
 // of an <a> — required wherever this sits inside another link (e.g. ListingCard),
 // since a nested <a> is invalid HTML and React warns/breaks hydration.
-export function ImageAttribution({ credit, linked = true }: { credit: ImageCredit; linked?: boolean }) {
-  const className = 'absolute bottom-1 end-1 rounded bg-black/40 px-1.5 py-0.5 text-[10px] leading-none text-white/80';
+export function ImageAttribution({
+  credit,
+  linked = true,
+}: {
+  credit: ImageCredit;
+  linked?: boolean;
+}) {
+  const className =
+    'absolute bottom-1 end-1 rounded bg-black/40 px-1.5 py-0.5 text-[10px] leading-none text-white/80';
   const label = (
     <>
       {credit.author} · {credit.license}

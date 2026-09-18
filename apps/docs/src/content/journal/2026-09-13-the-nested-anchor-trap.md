@@ -18,16 +18,26 @@ The fix adds a `linked` prop that swaps the `<a>` for a plain `<span>` when the
 component sits inside another link, keeping the same visual styling either way:
 
 ```tsx
-export function ImageAttribution({ credit, linked = true }: { credit: ImageCredit; linked?: boolean }) {
+export function ImageAttribution({
+  credit,
+  linked = true,
+}: {
+  credit: ImageCredit;
+  linked?: boolean;
+}) {
   if (!linked) return <span className={className}>{label}</span>;
-  return <a href={credit.sourceUrl} className={className}>{label}</a>;
+  return (
+    <a href={credit.sourceUrl} className={className}>
+      {label}
+    </a>
+  );
 }
 ```
 
 The general lesson: whenever a small "leaf" component might render inside a link,
 button, or label (all of which disallow certain nested interactive descendants),
 give it an escape hatch rather than assuming it's always used at the top level. This
-class of bug is easy to miss visually — the broken markup often still *looks* right
+class of bug is easy to miss visually — the broken markup often still _looks_ right
 in the browser — and only shows up as a click landing on the wrong target or a
 hydration warning in the console.
 </content>

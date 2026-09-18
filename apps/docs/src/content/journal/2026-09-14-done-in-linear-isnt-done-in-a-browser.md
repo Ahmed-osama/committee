@@ -1,5 +1,5 @@
 ---
-title: "\"Done\" in the tracker isn't \"done\" in a browser"
+title: '"Done" in the tracker isn''t "done" in a browser'
 date: 2026-09-14
 tags: ['testing', 'frontend']
 entryId: '2026-09-14-done-in-linear-isnt-done-in-a-browser'

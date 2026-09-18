@@ -25,11 +25,21 @@ export function BottomNav() {
         const active = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);
         const Icon = item.icon;
         return (
-          <Link key={item.href} href={item.href} className="flex flex-1 flex-col items-center gap-1">
-            <span className={`flex h-[26px] w-11 items-center justify-center rounded ${active ? 'bg-brand-light' : ''}`}>
+          <Link
+            key={item.href}
+            href={item.href}
+            className="flex flex-1 flex-col items-center gap-1"
+          >
+            <span
+              className={`flex h-[26px] w-11 items-center justify-center rounded ${active ? 'bg-brand-light' : ''}`}
+            >
               <Icon width={20} height={20} className={active ? 'text-brand' : 'text-faint'} />
             </span>
-            <span className={`text-xs ${active ? 'font-bold text-brand' : 'font-medium text-faint'}`}>{item.label}</span>
+            <span
+              className={`text-xs ${active ? 'font-bold text-brand' : 'font-medium text-faint'}`}
+            >
+              {item.label}
+            </span>
           </Link>
         );
       })}

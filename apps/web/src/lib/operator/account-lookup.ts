@@ -23,7 +23,10 @@ export async function findAccountByPhone(phone: string) {
       .select()
       .from(negotiations)
       .where(or(eq(negotiations.buyerId, user.id), eq(negotiations.sellerId, user.id))),
-    db.select().from(deals).where(or(eq(deals.buyerId, user.id), eq(deals.sellerId, user.id))),
+    db
+      .select()
+      .from(deals)
+      .where(or(eq(deals.buyerId, user.id), eq(deals.sellerId, user.id))),
   ]);
 
   return {

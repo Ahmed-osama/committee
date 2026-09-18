@@ -19,9 +19,12 @@ export async function POST(
   // COM-35: operator accounts aren't meant to transact at all — rejected outright
   // rather than relying only on incidental checks further down the call chain.
   if (session.role === 'operator') {
-    return NextResponse.json({ error: 'operator accounts cannot open negotiations' }, {
-      status: 403,
-    });
+    return NextResponse.json(
+      { error: 'operator accounts cannot open negotiations' },
+      {
+        status: 403,
+      },
+    );
   }
 
   const { id: listingId } = await params;

@@ -63,7 +63,10 @@ export default async function ListingsPage({
       </div>
 
       {listings.length === 0 ? (
-        <p id="results" className="scroll-mt-4 rounded-card bg-white p-6 text-center text-base text-muted shadow-card">
+        <p
+          id="results"
+          className="scroll-mt-4 rounded-card bg-white p-6 text-center text-base text-muted shadow-card"
+        >
           {t('empty')}
         </p>
       ) : (

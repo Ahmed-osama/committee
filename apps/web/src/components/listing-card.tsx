@@ -26,9 +26,18 @@ export function ListingCard({ listing }: { listing: ListingCardData }) {
   const TypeIcon = TYPE_ICON[listing.propertyType];
 
   return (
-    <Link href={`/listings/${listing.id}`} className="block overflow-hidden rounded-card bg-white shadow-card">
+    <Link
+      href={`/listings/${listing.id}`}
+      className="block overflow-hidden rounded-card bg-white shadow-card"
+    >
       <div className="relative h-28 w-full bg-brand-light">
-        <Image src={photoSrc} alt="" fill sizes="(max-width: 640px) 100vw, 480px" className="object-cover" />
+        <Image
+          src={photoSrc}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 100vw, 480px"
+          className="object-cover"
+        />
         {listing.photoUrl ? null : <ImageAttribution credit={credit} linked={false} />}
       </div>
       <div className="p-3">

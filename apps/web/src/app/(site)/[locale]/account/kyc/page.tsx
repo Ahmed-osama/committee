@@ -49,7 +49,9 @@ export default async function KycPage() {
       <p className="mb-6 text-sm text-muted">{t('subtitle')}</p>
       {kyc?.status === 'rejected' ? (
         <p role="alert" className="mb-6 text-base font-medium text-red-700">
-          {kyc.rejectionReason ? t('rejectedWithReason', { reason: kyc.rejectionReason }) : t('rejected')}
+          {kyc.rejectionReason
+            ? t('rejectedWithReason', { reason: kyc.rejectionReason })
+            : t('rejected')}
         </p>
       ) : null}
       <KycForm />
