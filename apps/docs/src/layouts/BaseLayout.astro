@@ -8,13 +8,14 @@ interface Props {
 const { title } = Astro.props;
 
 const topics = await getCollection('architecture');
-const sectionOrder = ['overview', 'core', 'db', 'apps', 'groundtruth'];
+const sectionOrder = ['overview', 'core', 'db', 'apps', 'groundtruth', 'srom-bot'];
 const sectionLabels: Record<string, string> = {
   overview: 'Overview',
   core: 'packages/core',
   db: 'packages/db',
   apps: 'apps/*',
   groundtruth: 'GroundTruth',
+  'srom-bot': 'SROM Bot',
 };
 const swatchBySection: Record<string, string> = {
   overview: 'var(--coral)',
@@ -22,6 +23,7 @@ const swatchBySection: Record<string, string> = {
   db: 'var(--cream)',
   apps: 'var(--green)',
   groundtruth: 'var(--purple)',
+  'srom-bot': 'var(--yellow)',
 };
 
 function sectionOf(slug: string) {

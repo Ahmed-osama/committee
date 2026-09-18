@@ -8,7 +8,8 @@ hand-rolled `docs/index.html` / `docs/learning.html`. `pnpm run docs:dev` /
 
 - `src/content/architecture/<section>/NN-topic.md` — one markdown file per topic, grouped
   into a folder per repo area (`overview`, `core` → `packages/core`, `db` → `packages/db`,
-  `apps` → `apps/*`, `groundtruth` → the GroundTruth product). `order` in frontmatter sets
+  `apps` → `apps/*`, `groundtruth` → the GroundTruth product, `srom-bot` → `apps/srom-bot`).
+  `order` in frontmatter sets
   the topic's position within its section — that ordering is the curriculum: the sidebar
   and each topic page's prev/next nav walk sections and topics in that sequence, section
   by section per `sectionOrder` in `BaseLayout.astro`.
