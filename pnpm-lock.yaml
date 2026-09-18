@@ -113,6 +113,18 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  apps/srom-bot:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.4.0
+        version: 26.4.0
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
   apps/web:
     dependencies:
       '@committee/auth-providers':
