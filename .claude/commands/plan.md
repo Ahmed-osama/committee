@@ -1,6 +1,6 @@
 ---
 description: Delegate a goal to the committee_plan MCP tool with a task-specific roster, not the generic six
-argument-hint: "[goal]"
+argument-hint: '[goal]'
 arguments: [goal]
 disable-model-invocation: false
 ---
@@ -11,7 +11,7 @@ Decide first whether this goal actually warrants a full committee debate (see
 `committee_mcp_delegation` guidance) rather than just answering it directly.
 
 If it does, call the `committee_plan` MCP tool. Build a custom `roster` (3-6 seats)
-tailored to what *this specific goal* needs — creative titles and personas per seat, not
+tailored to what _this specific goal_ needs — creative titles and personas per seat, not
 the generic Planner/Architect/Skeptic/Devil's Advocate/Estimator/Reviewer pool. Each
 seat's `role` still controls real debate mechanics (a `skeptic`-role seat gates
 finalization on raising real objections; `skeptic`/`devils_advocate` seats speak as

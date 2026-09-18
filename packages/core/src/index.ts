@@ -8,7 +8,13 @@ export type { Message, MessageIntent } from './domain/message.js';
 export type { ToolCostClass, ToolDefinition, ToolMetadata } from './domain/tool.js';
 
 export { runPlanningSession } from './conversation/planning-session.js';
-export type { FinalizedPlan, PlanTask, PlanningSessionOptions, PlanningSessionResult, ThinkingInfo } from './conversation/planning-session.js';
+export type {
+  FinalizedPlan,
+  PlanTask,
+  PlanningSessionOptions,
+  PlanningSessionResult,
+  ThinkingInfo,
+} from './conversation/planning-session.js';
 
 export { runExecutionTurn } from './execution/execute-command.js';
 export type { ExecutionTurnResult } from './execution/execute-command.js';
@@ -28,9 +34,18 @@ export { glmAdapter } from './provider/glm-adapter.js';
 export { openrouterAdapter } from './provider/openrouter-adapter.js';
 export { perplexityAdapter } from './provider/perplexity-adapter.js';
 export { PROVIDER_REGISTRY, isProviderConfigured } from './provider/provider-registry.js';
-export { selectProvider, isAgentReady, PROVIDER_STRENGTH_ORDER, rotateProviderOrder } from './provider/provider-router.js';
+export {
+  selectProvider,
+  isAgentReady,
+  PROVIDER_STRENGTH_ORDER,
+  rotateProviderOrder,
+} from './provider/provider-router.js';
 export type { ProviderSelection } from './provider/provider-router.js';
-export { getRateLimitStatus, getCallCountToday, getSpendUsdToday } from './provider/rate-limit-tracker.js';
+export {
+  getRateLimitStatus,
+  getCallCountToday,
+  getSpendUsdToday,
+} from './provider/rate-limit-tracker.js';
 export type { RateLimitStatus } from './provider/rate-limit-tracker.js';
 export { computeCostUsd } from './provider/pricing.js';
 

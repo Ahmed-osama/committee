@@ -7,3 +7,10 @@ build/
 committee.db
 committee.db-*
 .turbo/
+.next/
+.astro/
+apps/web/.data/
+.design-tmp/
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/playwright/.cache/

@@ -35,15 +35,39 @@ function fakeAgent(overrides: Partial<AgentConfig> = {}): AgentConfig {
 
 test('hard-stops once the daily call ceiling is hit, even with a healthy provider available', () => {
   const agent = fakeAgent();
-  recordProviderCall({ agentId: agent.id, providerId: 'ollama', modelId: 'llama3.1:8b', inputTokens: 1, outputTokens: 1, costUsd: 0 });
-  recordProviderCall({ agentId: agent.id, providerId: 'ollama', modelId: 'llama3.1:8b', inputTokens: 1, outputTokens: 1, costUsd: 0 });
+  recordProviderCall({
+    agentId: agent.id,
+    providerId: 'ollama',
+    modelId: 'llama3.1:8b',
+    inputTokens: 1,
+    outputTokens: 1,
+    costUsd: 0,
+  });
+  recordProviderCall({
+    agentId: agent.id,
+    providerId: 'ollama',
+    modelId: 'llama3.1:8b',
+    inputTokens: 1,
+    outputTokens: 1,
+    costUsd: 0,
+  });
 
   assert.throws(() => selectProvider(agent), /daily call ceiling/);
 });
 
 test('hard-stops once the daily spend ceiling is hit', () => {
-  const agent = fakeAgent({ providerPreference: ['anthropic'], modelByProvider: { anthropic: 'claude-sonnet-5' } });
-  recordProviderCall({ agentId: agent.id, providerId: 'anthropic', modelId: 'claude-sonnet-5', inputTokens: 0, outputTokens: 0, costUsd: 0.02 });
+  const agent = fakeAgent({
+    providerPreference: ['anthropic'],
+    modelByProvider: { anthropic: 'claude-sonnet-5' },
+  });
+  recordProviderCall({
+    agentId: agent.id,
+    providerId: 'anthropic',
+    modelId: 'claude-sonnet-5',
+    inputTokens: 0,
+    outputTokens: 0,
+    costUsd: 0.02,
+  });
 
   assert.throws(() => selectProvider(agent), /daily spend ceiling/);
 });

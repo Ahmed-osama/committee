@@ -31,9 +31,13 @@ export const LINEAR_TARGET_RULES: LinearTargetRule[] = [
   },
 ];
 
-export function resolveLinearTarget(summary: string): { matchedRule: string | null } & LinearTarget {
+export function resolveLinearTarget(
+  summary: string,
+): { matchedRule: string | null } & LinearTarget {
   const haystack = summary.toLowerCase();
-  const rule = LINEAR_TARGET_RULES.find((r) => r.keywords.some((k) => haystack.includes(k.toLowerCase())));
+  const rule = LINEAR_TARGET_RULES.find((r) =>
+    r.keywords.some((k) => haystack.includes(k.toLowerCase())),
+  );
   if (!rule) {
     return { matchedRule: null, ...DEFAULT_LINEAR_TARGET };
   }

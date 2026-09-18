@@ -13,7 +13,10 @@ const MAX_TITLE_LENGTH = 60;
  * instead of the raw goal text. Callers fire this right after
  * `createConversation` and persist the result with `setConversationTitle`.
  */
-export async function generateConversationTitle(opts: { agent: AgentConfig; goal: string }): Promise<string> {
+export async function generateConversationTitle(opts: {
+  agent: AgentConfig;
+  goal: string;
+}): Promise<string> {
   const { agent, goal } = opts;
 
   const prompt = [
@@ -30,9 +33,16 @@ export async function generateConversationTitle(opts: { agent: AgentConfig; goal
     modelId,
     inputTokens: result.usage.inputTokens ?? 0,
     outputTokens: result.usage.outputTokens ?? 0,
-    costUsd: computeCostUsd(providerId, modelId, result.usage.inputTokens ?? 0, result.usage.outputTokens ?? 0),
+    costUsd: computeCostUsd(
+      providerId,
+      modelId,
+      result.usage.inputTokens ?? 0,
+      result.usage.outputTokens ?? 0,
+    ),
   });
 
   const title = result.text.trim().replace(/^["'“”]|["'“”]$/g, '');
-  return title.length > MAX_TITLE_LENGTH ? title.slice(0, MAX_TITLE_LENGTH - 1).trimEnd() + '…' : title;
+  return title.length > MAX_TITLE_LENGTH
+    ? title.slice(0, MAX_TITLE_LENGTH - 1).trimEnd() + '…'
+    : title;
 }

@@ -18,13 +18,16 @@ function formatPlan(plan: FinalizedPlan): string {
  * (web server, CLI) run this after `runPlanningSession` resolves with a
  * finalized plan, then persist the result with `setConversationPlanVisual`.
  */
-export async function generatePlanVisual(opts: { agent: AgentConfig; plan: FinalizedPlan }): Promise<string> {
+export async function generatePlanVisual(opts: {
+  agent: AgentConfig;
+  plan: FinalizedPlan;
+}): Promise<string> {
   const { agent, plan } = opts;
 
   const prompt = [
     agent.systemPrompt,
     'Illustrate this finalized plan as one diagram — a simple flow of its tasks in order (boxes/steps connected ' +
-      'by arrows is fine), not a literal transcription of the text. Keep it to the plan\'s actual shape: if there ' +
+      "by arrows is fine), not a literal transcription of the text. Keep it to the plan's actual shape: if there " +
       'are 3 tasks, draw 3 steps, not more.',
     formatPlan(plan),
     'Respond with exactly one <svg>...</svg> element and nothing else. viewBox roughly 0 0 480 260 to 0 0 480 320. ' +
@@ -43,7 +46,12 @@ export async function generatePlanVisual(opts: { agent: AgentConfig; plan: Final
     modelId,
     inputTokens: result.usage.inputTokens ?? 0,
     outputTokens: result.usage.outputTokens ?? 0,
-    costUsd: computeCostUsd(providerId, modelId, result.usage.inputTokens ?? 0, result.usage.outputTokens ?? 0),
+    costUsd: computeCostUsd(
+      providerId,
+      modelId,
+      result.usage.inputTokens ?? 0,
+      result.usage.outputTokens ?? 0,
+    ),
   });
 
   const match = result.text.match(SVG_PATTERN);

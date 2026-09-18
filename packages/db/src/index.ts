@@ -1,0 +1,34 @@
+export { db, pooledDb } from './client.js';
+// Named re-exports rather than `export *` — Turbopack (via transpilePackages in
+// apps/web/next.config.js) doesn't reliably propagate a wildcard re-export's names
+// across the workspace-package boundary; explicit names also match this repo's
+// "named exports only" convention (docs/CODING_STYLE.md).
+export {
+  assistedChannelEnum,
+  assistedSessionLogs,
+  cannedScripts,
+  contactReveals,
+  creditLedgerEntries,
+  creditLedgerReasonEnum,
+  creditPurchases,
+  creditPurchaseStatusEnum,
+  dealStatusEnum,
+  deals,
+  kycStatusEnum,
+  kycVerifications,
+  lateSettlementReconciliations,
+  listingPhotos,
+  listings,
+  listingStatusEnum,
+  listingTypeEnum,
+  negotiationEvents,
+  negotiationEventTypeEnum,
+  negotiations,
+  negotiationStatusEnum,
+  negotiationTurnEnum,
+  otpRequests,
+  paymentOrders,
+  paymentOrderStatusEnum,
+  userRoleEnum,
+  users,
+} from './schema.js';

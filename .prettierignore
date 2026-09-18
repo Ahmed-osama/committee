@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+.astro/
+pnpm-lock.yaml
+committee.db
+committee.db-*
+apps/web/.data/
+apps/digest/digest-history.json
+packages/core/drizzle/
+packages/db/migrations/
+.design-tmp/

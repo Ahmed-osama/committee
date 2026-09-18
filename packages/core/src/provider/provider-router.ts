@@ -22,11 +22,14 @@ export const PROVIDER_STRENGTH_ORDER = [
   'gemini',
   'groq',
   'sambanova',
+  'cerebras',
   'deepseek',
   'glm',
+  'mistral',
   'nvidia-nim',
   'openrouter',
   'perplexity',
+  'cohere',
   'ollama',
 ];
 
@@ -59,12 +62,16 @@ const DAILY_SPEND_USD_CEILING = Number(process.env.COMMITTEE_DAILY_SPEND_USD_CEI
 export function selectProvider(agent: AgentConfig): ProviderSelection {
   const callsToday = getCallCountToday(agent.id);
   if (callsToday >= DAILY_CALL_CEILING) {
-    throw new Error(`Agent ${agent.id} hit its daily call ceiling (${DAILY_CALL_CEILING}) — refusing further LLM calls today.`);
+    throw new Error(
+      `Agent ${agent.id} hit its daily call ceiling (${DAILY_CALL_CEILING}) — refusing further LLM calls today.`,
+    );
   }
 
   const spendToday = getSpendUsdToday(agent.id);
   if (spendToday >= DAILY_SPEND_USD_CEILING) {
-    throw new Error(`Agent ${agent.id} hit its daily spend ceiling ($${DAILY_SPEND_USD_CEILING}) — refusing further LLM calls today.`);
+    throw new Error(
+      `Agent ${agent.id} hit its daily spend ceiling ($${DAILY_SPEND_USD_CEILING}) — refusing further LLM calls today.`,
+    );
   }
 
   for (const providerId of agent.providerPreference) {
